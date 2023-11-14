@@ -1,24 +1,13 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
-
-# Add your action's branding here. This will appear on the GitHub Marketplace.
-branding:
-  icon: 'heart'
-  color: 'red'
-
-# Define your inputs here.
+name: 'Hello World'
+description: 'Greet someone and record the time'
 inputs:
-  milliseconds:
-    description: 'Your input description here'
+  who-to-greet:  # id of input
+    description: 'Who to greet'
     required: true
-    default: '1000'
-
-# Define your outputs here.
+    default: 'World'
 outputs:
-  time:
-    description: 'Your output description here'
-
+  time: # id of output
+    description: 'The time we greeted you'
 runs:
-  using: node20
+  using: 'node20'
   main: dist/index.js
