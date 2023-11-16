@@ -1,7 +1,9 @@
-/**
- * The entrypoint for the action.
- */
-import { run } from './main'
+import * as core from '@actions/core';
+import { start } from './logic';
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
-run()
+const run = async (): Promise<void> => {
+    core.info(`Starting cm-backport-pr action at ${new Date()}...`);
+    await start();
+};
+
+run().catch(error => core.setFailed(error.message));

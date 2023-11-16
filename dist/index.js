@@ -28471,7 +28471,7 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 399:
+/***/ 8229:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -28500,30 +28500,340 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.run = void 0;
+exports.getClient = exports.initClient = void 0;
+const github = __importStar(__nccwpck_require__(5438));
+const core = __importStar(__nccwpck_require__(2186));
+let client = undefined;
+const initClient = (token = '') => {
+    client = github.getOctokit(token);
+    core.info('Started Octokit REST API client with auth token');
+};
+exports.initClient = initClient;
+const getClient = () => {
+    if (client === null || client === undefined) {
+        throw new Error('Octokit REST API client was not initialized');
+    }
+    return client.rest;
+};
+exports.getClient = getClient;
+
+
+/***/ }),
+
+/***/ 6144:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core = __importStar(__nccwpck_require__(2186));
+const logic_1 = __nccwpck_require__(5684);
+const run = async () => {
+    core.info(`Starting cm-backport-pr action at ${new Date()}...`);
+    await (0, logic_1.start)();
+};
+run().catch(error => core.setFailed(error.message));
+
+
+/***/ }),
+
+/***/ 5684:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.start = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const api_1 = __nccwpck_require__(8229);
+const pr_1 = __nccwpck_require__(4480);
+const validation_1 = __nccwpck_require__(4875);
+const start = async () => {
+    // Read input parameters from workflow
+    const options = (0, validation_1.readInputParameters)();
+    // Init REST API Client with auth token
+    (0, api_1.initClient)(options.token);
+    // Get open PR
+    let pr = await (0, pr_1.getOpenPR)(options.prFromBranch, options.prToBranch);
+    if (pr !== null && options.prFailIfExists) {
+        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+    }
+    if (pr !== null && !options.prUpdateIfExists) {
+        core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
+        core.setOutput('pr-number', pr.number);
+        core.setOutput('pr-url', pr.html_url);
+        core.setOutput('pr-sha', '');
+        return;
+    }
+    // If PR is found but is a draft, cannot be merged if mergePRAfterCreated is true
+    if (pr !== null && pr.draft && options.mergePRAfterCreated) {
+        throw new Error(`An active PR was found but it cannot be merged, it's a draft (merge-pr-after-created: true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+    }
+    if (pr !== null) {
+        // Update current PR
+        pr = await (0, pr_1.updatePR)(pr.number, options.prTitle, options.prBody);
+    }
+    else {
+        // Create PR if not exists
+        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
+    }
+    let sha = '';
+    if (options.mergePRAfterCreated) {
+        // If automatic merge is active, merge PR
+        sha = await (0, pr_1.mergePR)(pr.number, options.mergeCommitTitle, options.mergeCommitBody, options.mergeMethod);
+    }
+    core.setOutput('pr-number', pr.number);
+    core.setOutput('pr-url', pr.html_url);
+    core.setOutput('pr-sha', sha);
+};
+exports.start = start;
+
+
+/***/ }),
+
+/***/ 4480:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.mergePR = exports.createPR = exports.updatePR = exports.getOpenPR = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
-/**
- * The main function for the action.
- * @returns {Promise<void>} Resolves when the action is complete.
- */
-async function run() {
-    try {
-        // `who-to-greet` input defined in action metadata file
-        const nameToGreet = core.getInput('who-to-greet');
-        console.log(`Hello ${nameToGreet}!`);
-        const time = new Date().toTimeString();
-        core.setOutput('time', time);
-        // Get the JSON webhook payload for the event that triggered the workflow
-        const payload = JSON.stringify(github.context.payload, undefined, 2);
-        console.log(`The event payload: ${payload}`);
+const api_1 = __nccwpck_require__(8229);
+const validation_1 = __nccwpck_require__(4875);
+const getOpenPR = async (head, base, repoOwner = undefined, repoName = undefined) => {
+    const owner = repoOwner ? repoOwner : github.context.repo.owner;
+    const repo = repoName ? repoName : github.context.repo.repo;
+    const state = 'open';
+    core.info(`Checking if there is a open PR in repo ${owner}/${repo} from ${head} to ${base}...`);
+    const parameters = { owner, repo, head, base, state };
+    const response = await (0, api_1.getClient)().pulls.list(parameters);
+    if (response && response.data && response.data.length > 0) {
+        const pr = response.data[0];
+        core.info(`An active PR was found: # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        return pr;
     }
-    catch (error) {
-        if (error instanceof Error)
-            core.setFailed(error.message);
+    core.info(`No active PR was found`);
+    return null;
+};
+exports.getOpenPR = getOpenPR;
+const updatePR = async (number, title, message, repoOwner = undefined, repoName = undefined) => {
+    const owner = repoOwner ? repoOwner : github.context.repo.owner;
+    const repo = repoName ? repoName : github.context.repo.repo;
+    const state = 'open';
+    core.info(`Updating PR in repo ${owner}/${repo} (PR Number: ${number})...`);
+    const parameters = { owner, repo, pull_number: number, state };
+    if (!(0, validation_1.isDefaultTitle)() && String(title).trim().length > 0) {
+        parameters.title = title;
     }
-}
-exports.run = run;
+    if (String(message).trim().length > 0) {
+        parameters.body = message;
+    }
+    const response = await (0, api_1.getClient)().pulls.update(parameters);
+    if (response && response.data) {
+        const pr = response.data;
+        core.info(`Updated PR: # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        return pr;
+    }
+    throw new Error(`Error updating PR in repo ${owner}/${repo} (PR Number: ${number})`);
+};
+exports.updatePR = updatePR;
+const createPR = async (head, base, title, body, maintainerCanModify, draft, repoOwner = undefined, repoName = undefined) => {
+    const owner = repoOwner ? repoOwner : github.context.repo.owner;
+    const repo = repoName ? repoName : github.context.repo.repo;
+    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base} (draft: ${draft})...`);
+    const parameters = {
+        owner,
+        repo,
+        title,
+        head,
+        base,
+        body,
+        maintainer_can_modify: maintainerCanModify,
+        draft
+    };
+    const response = await (0, api_1.getClient)().pulls.create(parameters);
+    if (response && response.data) {
+        const pr = response.data;
+        core.info(`Created new PR: # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        return pr;
+    }
+    throw new Error(`Error creating new PR in repo ${owner}/${repo} from ${head} to ${base} (draft: ${draft})`);
+};
+exports.createPR = createPR;
+const mergePR = async (number, title, message, method, repoOwner = undefined, repoName = undefined) => {
+    const owner = repoOwner ? repoOwner : github.context.repo.owner;
+    const repo = repoName ? repoName : github.context.repo.repo;
+    core.info(`Merging PR in repo ${owner}/${repo} (PR Number: ${number})...`);
+    const parameters = { owner, repo, pull_number: number, merge_method: method };
+    if (String(title).trim().length > 0) {
+        parameters.commit_title = title;
+    }
+    if (String(message).trim().length > 0) {
+        parameters.commit_message = message;
+    }
+    const response = await (0, api_1.getClient)().pulls.merge(parameters);
+    if (response && response.data && response.data.sha) {
+        const sha = response.data.sha;
+        core.info(`Merged PR: # ${number} (SHA: ${sha})`);
+        return sha;
+    }
+    throw new Error(`Error merging PR in repo ${owner}/${repo} (PR Number: ${number})`);
+};
+exports.mergePR = mergePR;
+
+
+/***/ }),
+
+/***/ 4875:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isDefaultTitle = exports.readInputParameters = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const mergeMethods = ['merge', 'squash', 'rebase'];
+let defaultPRTitle = false;
+const readInputParameters = (options = undefined) => {
+    if (options !== undefined) {
+        core.info('Reading input parameters from internal method...');
+        return validateOptions(options);
+    }
+    core.info('Reading input parameters from GitHub workflow...');
+    const inputOptions = {
+        token: core.getInput('token', { required: true, trimWhitespace: true }),
+        prFromBranch: core.getInput('pr-from-branch', { required: true }),
+        prToBranch: core.getInput('pr-to-branch', { required: true }),
+        prTitle: core.getInput('pr-title', { trimWhitespace: true }),
+        prBody: core.getInput('pr-body', { trimWhitespace: true }),
+        prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
+        prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
+        maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
+        draft: core.getBooleanInput('draft'),
+        mergePRAfterCreated: core.getBooleanInput('merge-pr-after-created'),
+        mergeCommitTitle: core.getInput('merge-commit-title', { trimWhitespace: true }),
+        mergeCommitBody: core.getInput('merge-commit-body', { trimWhitespace: true }),
+        mergeMethod: core.getInput('merge-method')
+    };
+    return validateOptions(inputOptions);
+};
+exports.readInputParameters = readInputParameters;
+const validateOptions = (inputs = {}) => {
+    const errors = [];
+    core.info('Validating input parameters...');
+    if (String(inputs.prTitle).trim().length === 0) {
+        inputs.prTitle = `[Backport PR] From ${inputs.prFromBranch} to ${inputs.prToBranch}`;
+        defaultPRTitle = true;
+    }
+    if (inputs.draft && inputs.mergePRAfterCreated) {
+        errors.push(`Cannot set 'draft' with value ${inputs.draft} and 'merge-pr-after-created' with value ${inputs.mergePRAfterCreated}: It's not possible to merge a PR draft`);
+    }
+    if (!mergeMethods.includes(inputs.mergeMethod)) {
+        errors.push(`'merge-method' doesn't have a valid value: ${inputs.mergeMethod}. Valid values are ${mergeMethods.join(', ')}`);
+    }
+    if (errors.length > 0) {
+        core.warning(`${errors.length} errors were found in the input parameters. Please check and try again`);
+        throw new Error(errors.toString());
+    }
+    core.info('Input parameters validation passed successfully');
+    return inputs;
+};
+const isDefaultTitle = () => defaultPRTitle;
+exports.isDefaultTitle = isDefaultTitle;
 
 
 /***/ }),
@@ -30409,22 +30719,12 @@ module.exports = parseParams
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-var exports = __webpack_exports__;
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-/**
- * The entrypoint for the action.
- */
-const main_1 = __nccwpck_require__(399);
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
-(0, main_1.run)();
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(6144);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
