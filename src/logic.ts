@@ -33,6 +33,13 @@ const start = async (): Promise<void> => {
         throw new Error(`An active PR was found but it cannot be merged, it's a draft (merge-pr-after-created: true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
     }
 
+    if (pr !== null && options.prToBranch !== pr.base.ref) {
+        // La rama de destino de la PR existente es diferente a la especificada en las opciones
+
+        // Actualiza la PR existente con los cambios de la nueva rama
+        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
+    }
+
     if (pr !== null) {
         // Update current PR
         pr = await updatePR(pr.number, options.prTitle, options.prBody);
