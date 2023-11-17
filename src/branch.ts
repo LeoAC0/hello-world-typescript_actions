@@ -26,7 +26,7 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
             owner,
             repo,
             ref,
-            sha: 'master' // Puedes ajustar esto según la rama base deseada
+            sha: 'main' // Cambiar segun la rama a usar
         });
 
         core.info(`Branch created successfully: ${ref}`);

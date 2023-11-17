@@ -3,6 +3,7 @@ import * as core from '@actions/core';
 import { initClient } from './api';
 import { getOpenPR, createPR, mergePR, updatePR } from './pr';
 import { readInputParameters } from './validation';
+import { createBranch } from './branch';
 
 const start = async (): Promise<void> => {
     // Read input parameters from workflow
@@ -36,6 +37,10 @@ const start = async (): Promise<void> => {
     if (pr !== null && options.prToBranch !== pr.base.ref) {
         // La rama de destino de la PR existente es diferente a la especificada en las opciones
 
+        // Crea una nueva rama para el backport
+        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
+        await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        
         // Actualiza la PR existente con los cambios de la nueva rama
         pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
     }
