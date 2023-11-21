@@ -28520,6 +28520,67 @@ exports.getClient = getClient;
 
 /***/ }),
 
+/***/ 1674:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createBranch = void 0;
+const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
+const api_1 = __nccwpck_require__(8229);
+const createBranch = async (options) => {
+    const { branchName, repoOwner, repoName } = options;
+    const owner = repoOwner || github.context.repo.owner;
+    const repo = repoName || github.context.repo.repo;
+    // Init REST API Client with auth token
+    (0, api_1.initClient)();
+    const ref = `refs/heads/${branchName}`;
+    core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
+    try {
+        await (0, api_1.getClient)().git.createRef({
+            owner,
+            repo,
+            ref,
+            sha: 'main' // Cambiar segun la rama a usar
+        });
+        core.info(`Branch created successfully: ${ref}`);
+    }
+    catch (error) {
+        const errorMessage = error.message;
+        core.error(`Error creating branch ${ref}: ${errorMessage}`);
+        throw error;
+    }
+};
+exports.createBranch = createBranch;
+
+
+/***/ }),
+
 /***/ 6144:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -28594,6 +28655,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const api_1 = __nccwpck_require__(8229);
 const pr_1 = __nccwpck_require__(4480);
 const validation_1 = __nccwpck_require__(4875);
+const branch_1 = __nccwpck_require__(1674);
 const start = async () => {
     // Read input parameters from workflow
     const options = (0, validation_1.readInputParameters)();
@@ -28614,6 +28676,14 @@ const start = async () => {
     // If PR is found but is a draft, cannot be merged if mergePRAfterCreated is true
     if (pr !== null && pr.draft && options.mergePRAfterCreated) {
         throw new Error(`An active PR was found but it cannot be merged, it's a draft (merge-pr-after-created: true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+    }
+    if (pr !== null && options.prToBranch !== pr.base.ref) {
+        // La rama de destino de la PR existente es diferente a la especificada en las opciones
+        // Crea una nueva rama para el backport
+        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
+        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        // Actualiza la PR existente con los cambios de la nueva rama
+        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
     }
     if (pr !== null) {
         // Update current PR
