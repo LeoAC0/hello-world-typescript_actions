@@ -28,9 +28,9 @@ jobs:
           pr-title: "PR main into next."
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
-          pr-update-if-exists: true
-          maintainer-can-modify: true
-          draft: true
+          pr-update-if-exists: false
+          maintainer-can-modify: false
+          draft: false
           merge-pr-after-created: false
           merge-commit-title: "Merge main to next"
           merge-commit-body: "Auto PRs into NEXT."
