@@ -1,0 +1,44 @@
+name: Auto Merge to Next
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  auto_merge:
+    if: github.event.pull_request.merged == true && (contains(github.event.pull_request.head.ref,'HOTFIX') || contains(github.event.pull_request.head.ref,'hotfix'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set name PR-From-Branch
+        id: set_branch
+        run: echo "PR_FROM_BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+
+      - name: Backport from main to next
+        id: cmb
+        uses: LeoAC0/hello-world-typescript_actions@v1.2
+        with:
+          token: ${{ secrets.NPM_READ_TOKEN }}
+          pr-from-branch: main #${{ env.PR_FROM_BRANCH }}
+          pr-to-branch: next
+          pr-title: "PR main into next."
+          pr-body: "Auto PRs into NEXT."
+          pr-fail-if-exists: false
+          pr-update-if-exists: true
+          maintainer-can-modify: true
+          draft: true
+          merge-pr-after-created: false
+          merge-commit-title: "Merge main to next"
+          merge-commit-body: "Auto PRs into NEXT."
+          merge-method: rebase
+
+      - name: Output from action
+        run: |
+            echo "PR Number: ${{ steps.cmb.outputs.pr-number }}"
+            echo "PR URL: ${{ steps.cmb.outputs.pr-url }}"
+            echo "PR SHA: ${{ steps.cmb.outputs.pr-sha }}"
+  
