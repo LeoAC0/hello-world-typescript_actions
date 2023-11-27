@@ -15,6 +15,19 @@ const start = async (): Promise<void> => {
     // Get open PR
     let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
 
+    if (pr !== null && options.prToBranch !== pr.base.ref) {
+        // La rama de destino de la PR existente es diferente a la especificada en las opciones
+
+        // Crea una nueva rama para el backport
+        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
+        await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        core.setOutput('From-Branch: ', options.prToBranch);
+        core.setOutput('PR-Base: ', pr.base.ref);
+        
+        // Actualiza la PR existente con los cambios de la nueva rama
+        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
+    }
+
     if (pr !== null && options.prFailIfExists) {
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`)
     }
@@ -32,17 +45,6 @@ const start = async (): Promise<void> => {
     // If PR is found but is a draft, cannot be merged if mergePRAfterCreated is true
     if (pr !== null && pr.draft && options.mergePRAfterCreated) {
         throw new Error(`An active PR was found but it cannot be merged, it's a draft (merge-pr-after-created: true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
-    }
-
-    if (pr !== null && options.prToBranch !== pr.base.ref) {
-        // La rama de destino de la PR existente es diferente a la especificada en las opciones
-
-        // Crea una nueva rama para el backport
-        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
-        await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        
-        // Actualiza la PR existente con los cambios de la nueva rama
-        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
     }
 
     if (pr !== null) {
