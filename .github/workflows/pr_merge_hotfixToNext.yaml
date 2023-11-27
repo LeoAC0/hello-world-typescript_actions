@@ -34,7 +34,7 @@ jobs:
           merge-pr-after-created: false
           merge-commit-title: "Merge main to next"
           merge-commit-body: "Auto PRs into NEXT."
-          merge-method: rebase
+          merge-method: merge
 
       - name: Output from action
         run: |
