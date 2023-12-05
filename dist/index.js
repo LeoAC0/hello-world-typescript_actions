@@ -28558,7 +28558,7 @@ const createBranch = async (options) => {
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
     // Init REST API Client with auth token
-    (0, api_1.initClient)();
+    //initClient();
     const ref = `refs/heads/${branchName}`;
     core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
     try {
@@ -28663,8 +28663,18 @@ const start = async () => {
     (0, api_1.initClient)(options.token);
     // Get open PR
     let pr = await (0, pr_1.getOpenPR)(options.prFromBranch, options.prToBranch);
+    if (pr !== null && options.prToBranch !== pr.base.ref) {
+        // La rama de destino de la PR existente es diferente a la especificada en las opciones
+        // Crea una nueva rama para el backport
+        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
+        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        core.setOutput('From-Branch: ', options.prToBranch);
+        core.setOutput('PR-Base: ', pr.base.ref);
+        // Actualiza la PR existente con los cambios de la nueva rama
+        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
+    }
     if (pr !== null && options.prFailIfExists) {
-        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
     if (pr !== null && !options.prUpdateIfExists) {
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
@@ -28673,31 +28683,15 @@ const start = async () => {
         core.setOutput('pr-sha', '');
         return;
     }
-    // If PR is found but is a draft, cannot be merged if mergePRAfterCreated is true
-    if (pr !== null && pr.draft && options.mergePRAfterCreated) {
-        throw new Error(`An active PR was found but it cannot be merged, it's a draft (merge-pr-after-created: true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
-    }
-    if (pr !== null && options.prToBranch !== pr.base.ref) {
-        // La rama de destino de la PR existente es diferente a la especificada en las opciones
-        // Crea una nueva rama para el backport
-        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
-        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        // Actualiza la PR existente con los cambios de la nueva rama
-        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
-    }
     if (pr !== null) {
         // Update current PR
         pr = await (0, pr_1.updatePR)(pr.number, options.prTitle, options.prBody);
     }
     else {
         // Create PR if not exists
-        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
+        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
     }
     let sha = '';
-    if (options.mergePRAfterCreated) {
-        // If automatic merge is active, merge PR
-        sha = await (0, pr_1.mergePR)(pr.number, options.mergeCommitTitle, options.mergeCommitBody, options.mergeMethod);
-    }
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);
     core.setOutput('pr-sha', sha);
@@ -28736,7 +28730,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergePR = exports.createPR = exports.updatePR = exports.getOpenPR = void 0;
+exports.createPR = exports.updatePR = exports.getOpenPR = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const api_1 = __nccwpck_require__(8229);
@@ -28750,7 +28744,7 @@ const getOpenPR = async (head, base, repoOwner = undefined, repoName = undefined
     const response = await (0, api_1.getClient)().pulls.list(parameters);
     if (response && response.data && response.data.length > 0) {
         const pr = response.data[0];
-        core.info(`An active PR was found: # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        core.info(`An active PR was found: # ${pr.number} (${pr.html_url})`);
         return pr;
     }
     core.info(`No active PR was found`);
@@ -28772,55 +28766,33 @@ const updatePR = async (number, title, message, repoOwner = undefined, repoName 
     const response = await (0, api_1.getClient)().pulls.update(parameters);
     if (response && response.data) {
         const pr = response.data;
-        core.info(`Updated PR: # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        core.info(`Updated PR: # ${pr.number} (${pr.html_url})`);
         return pr;
     }
     throw new Error(`Error updating PR in repo ${owner}/${repo} (PR Number: ${number})`);
 };
 exports.updatePR = updatePR;
-const createPR = async (head, base, title, body, maintainerCanModify, draft, repoOwner = undefined, repoName = undefined) => {
+const createPR = async (head, base, title, body, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
-    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base} (draft: ${draft})...`);
+    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
     const parameters = {
         owner,
         repo,
         title,
         head,
         base,
-        body,
-        maintainer_can_modify: maintainerCanModify,
-        draft
+        body
     };
     const response = await (0, api_1.getClient)().pulls.create(parameters);
     if (response && response.data) {
         const pr = response.data;
-        core.info(`Created new PR: # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
+        core.info(`Created new PR: # ${pr.number} (${pr.html_url})`);
         return pr;
     }
-    throw new Error(`Error creating new PR in repo ${owner}/${repo} from ${head} to ${base} (draft: ${draft})`);
+    throw new Error(`Error creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
 };
 exports.createPR = createPR;
-const mergePR = async (number, title, message, method, repoOwner = undefined, repoName = undefined) => {
-    const owner = repoOwner ? repoOwner : github.context.repo.owner;
-    const repo = repoName ? repoName : github.context.repo.repo;
-    core.info(`Merging PR in repo ${owner}/${repo} (PR Number: ${number})...`);
-    const parameters = { owner, repo, pull_number: number, merge_method: method };
-    if (String(title).trim().length > 0) {
-        parameters.commit_title = title;
-    }
-    if (String(message).trim().length > 0) {
-        parameters.commit_message = message;
-    }
-    const response = await (0, api_1.getClient)().pulls.merge(parameters);
-    if (response && response.data && response.data.sha) {
-        const sha = response.data.sha;
-        core.info(`Merged PR: # ${number} (SHA: ${sha})`);
-        return sha;
-    }
-    throw new Error(`Error merging PR in repo ${owner}/${repo} (PR Number: ${number})`);
-};
-exports.mergePR = mergePR;
 
 
 /***/ }),
@@ -28856,7 +28828,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isDefaultTitle = exports.readInputParameters = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const mergeMethods = ['merge', 'squash', 'rebase'];
 let defaultPRTitle = false;
 const readInputParameters = (options = undefined) => {
     if (options !== undefined) {
@@ -28873,11 +28844,6 @@ const readInputParameters = (options = undefined) => {
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
         maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
-        draft: core.getBooleanInput('draft'),
-        mergePRAfterCreated: core.getBooleanInput('merge-pr-after-created'),
-        mergeCommitTitle: core.getInput('merge-commit-title', { trimWhitespace: true }),
-        mergeCommitBody: core.getInput('merge-commit-body', { trimWhitespace: true }),
-        mergeMethod: core.getInput('merge-method')
     };
     return validateOptions(inputOptions);
 };
@@ -28888,16 +28854,6 @@ const validateOptions = (inputs = {}) => {
     if (String(inputs.prTitle).trim().length === 0) {
         inputs.prTitle = `[Backport PR] From ${inputs.prFromBranch} to ${inputs.prToBranch}`;
         defaultPRTitle = true;
-    }
-    if (inputs.draft && inputs.mergePRAfterCreated) {
-        errors.push(`Cannot set 'draft' with value ${inputs.draft} and 'merge-pr-after-created' with value ${inputs.mergePRAfterCreated}: It's not possible to merge a PR draft`);
-    }
-    if (!mergeMethods.includes(inputs.mergeMethod)) {
-        errors.push(`'merge-method' doesn't have a valid value: ${inputs.mergeMethod}. Valid values are ${mergeMethods.join(', ')}`);
-    }
-    if (errors.length > 0) {
-        core.warning(`${errors.length} errors were found in the input parameters. Please check and try again`);
-        throw new Error(errors.toString());
     }
     core.info('Input parameters validation passed successfully');
     return inputs;
