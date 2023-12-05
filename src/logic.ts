@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 
 import { initClient } from './api';
-import { getOpenPR, createPR, mergePR, updatePR } from './pr';
+import { getOpenPR, createPR, updatePR } from './pr';
 import { readInputParameters } from './validation';
 import { createBranch } from './branch';
 
@@ -25,11 +25,11 @@ const start = async (): Promise<void> => {
         core.setOutput('PR-Base: ', pr.base.ref);
         
         // Actualiza la PR existente con los cambios de la nueva rama
-        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
+        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
     }
 
     if (pr !== null && options.prFailIfExists) {
-        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`)
+        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`)
     }
 
     if (pr !== null && !options.prUpdateIfExists) {
@@ -42,25 +42,15 @@ const start = async (): Promise<void> => {
         return;
     }
 
-    // If PR is found but is a draft, cannot be merged if mergePRAfterCreated is true
-    if (pr !== null && pr.draft && options.mergePRAfterCreated) {
-        throw new Error(`An active PR was found but it cannot be merged, it's a draft (merge-pr-after-created: true): # ${pr.number} (${pr.html_url}) (draft: ${pr.draft})`);
-    }
-
     if (pr !== null) {
         // Update current PR
         pr = await updatePR(pr.number, options.prTitle, options.prBody);
     } else {
         // Create PR if not exists
-        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody, options.maintainerCanModify, options.draft);
+        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
     }
 
     let sha = '';
-
-    if (options.mergePRAfterCreated) {
-        // If automatic merge is active, merge PR
-        sha = await mergePR(pr.number, options.mergeCommitTitle, options.mergeCommitBody, options.mergeMethod);
-    }
 
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);

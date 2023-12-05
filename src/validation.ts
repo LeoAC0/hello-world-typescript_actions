@@ -1,7 +1,5 @@
 import * as core from '@actions/core';
 
-const mergeMethods: string[] = ['merge', 'squash', 'rebase'];
-
 let defaultPRTitle = false;
 
 const readInputParameters = (options: any = undefined): any => {
@@ -20,12 +18,6 @@ const readInputParameters = (options: any = undefined): any => {
         prBody: core.getInput('pr-body', {trimWhitespace: true}),
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
-        maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
-        draft: core.getBooleanInput('draft'),
-        mergePRAfterCreated: core.getBooleanInput('merge-pr-after-created'),
-        mergeCommitTitle: core.getInput('merge-commit-title', {trimWhitespace: true}),
-        mergeCommitBody: core.getInput('merge-commit-body', {trimWhitespace: true}),
-        mergeMethod: core.getInput('merge-method')
     };
 
     return validateOptions(inputOptions);
@@ -38,19 +30,6 @@ const validateOptions = (inputs: any = {}): any => {
     if (String(inputs.prTitle).trim().length === 0) {
         inputs.prTitle = `[Backport PR] From ${inputs.prFromBranch} to ${inputs.prToBranch}`;
         defaultPRTitle = true;
-    }
-
-    if (inputs.draft && inputs.mergePRAfterCreated) {
-        errors.push(`Cannot set 'draft' with value ${inputs.draft} and 'merge-pr-after-created' with value ${inputs.mergePRAfterCreated}: It's not possible to merge a PR draft`);
-    }
-
-    if (!mergeMethods.includes(inputs.mergeMethod)) {
-        errors.push(`'merge-method' doesn't have a valid value: ${inputs.mergeMethod}. Valid values are ${mergeMethods.join(', ')}`);
-    }
-
-    if (errors.length > 0) {
-        core.warning(`${errors.length} errors were found in the input parameters. Please check and try again`);
-        throw new Error(errors.toString());
     }
 
     core.info('Input parameters validation passed successfully');
