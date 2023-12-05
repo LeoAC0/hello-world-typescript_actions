@@ -22,19 +22,13 @@ jobs:
         id: cmb
         uses: LeoAC0/hello-world-typescript_actions@v1.2
         with:
-          token: ${{ secrets.TOKEN_TEST }}
+          token: ${{ secrets.GITHUB_TOKEN}}
           pr-from-branch: main #${{ env.PR_FROM_BRANCH }}
           pr-to-branch: next
           pr-title: "PR main into next."
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
           pr-update-if-exists: false
-          maintainer-can-modify: false
-          draft: false
-          merge-pr-after-created: false
-          merge-commit-title: "Merge main to next"
-          merge-commit-body: "Auto PRs into NEXT."
-          merge-method: merge
 
       - name: Output from action
         run: |
