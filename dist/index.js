@@ -28843,7 +28843,10 @@ const readInputParameters = (options = undefined) => {
         prBody: core.getInput('pr-body', { trimWhitespace: true }),
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
+<<<<<<< HEAD
         maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
+=======
+>>>>>>> 813756bf7f8adbc4a509ef6770b1d11028a19da0
     };
     return validateOptions(inputOptions);
 };
