@@ -28663,16 +28663,6 @@ const start = async () => {
     (0, api_1.initClient)(options.token);
     // Get open PR
     let pr = await (0, pr_1.getOpenPR)(options.prFromBranch, options.prToBranch);
-    if (pr !== null && options.prToBranch !== pr.base.ref) {
-        // La rama de destino de la PR existente es diferente a la especificada en las opciones
-        // Crea una nueva rama para el backport
-        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
-        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        core.setOutput('From-Branch: ', options.prToBranch);
-        core.setOutput('PR-Base: ', pr.base.ref);
-        // Actualiza la PR existente con los cambios de la nueva rama
-        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
-    }
     if (pr !== null && options.prFailIfExists) {
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
@@ -28689,7 +28679,12 @@ const start = async () => {
     }
     else {
         // Create PR if not exists
-        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
+        // Crea una nueva rama para el backport
+        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
+        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        core.setOutput('From-Branch: ', backportBranchName);
+        core.setOutput('PR-Base: ', pr.base.ref);
+        pr = await (0, pr_1.createPR)(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
     }
     let sha = '';
     core.setOutput('pr-number', pr.number);
