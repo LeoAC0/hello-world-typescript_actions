@@ -30,6 +30,10 @@ inputs:
     description: 'If there is already a PR that matches the configured branches, with this option you can update that PR with the new content.'
     required: false
     default: 'false'
+  maintainer-can-modify:
+    description: 'Indicates whether maintainers can modify the pull request.'
+    required: false
+    default: 'false'
 outputs:
   pr-number:
     description: 'Pull request number.'
