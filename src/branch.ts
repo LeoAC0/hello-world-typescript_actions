@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-import { initClient, getClient } from './api';
+import { getClient } from './api';
 
 interface BranchOptions {
     branchName: string;
@@ -15,7 +15,7 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
     const repo = repoName || github.context.repo.repo;
 
     // Init REST API Client with auth token
-    initClient();
+    //initClient();
 
     const ref = `refs/heads/${branchName}`;
 
