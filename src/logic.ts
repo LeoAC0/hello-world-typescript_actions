@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import * as github from '@actions/github';
 
 import { initClient } from './api';
 import { getOpenPR, createPR, updatePR } from './pr';
@@ -14,19 +15,6 @@ const start = async (): Promise<void> => {
 
     // Get open PR
     let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
-
-    if (pr !== null && options.prToBranch !== pr.base.ref) {
-        // La rama de destino de la PR existente es diferente a la especificada en las opciones
-
-        // Crea una nueva rama para el backport
-        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
-        await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        core.setOutput('From-Branch: ', options.prToBranch);
-        core.setOutput('PR-Base: ', pr.base.ref);
-        
-        // Actualiza la PR existente con los cambios de la nueva rama
-        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
-    }
 
     if (pr !== null && options.prFailIfExists) {
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`)
@@ -47,7 +35,15 @@ const start = async (): Promise<void> => {
         pr = await updatePR(pr.number, options.prTitle, options.prBody);
     } else {
         // Create PR if not exists
-        pr = await createPR(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
+
+        // Crea una nueva rama para el backport
+        const branchHotfix = github.context.payload.pull_request?.base?.ref;
+        const backportBranchName = `backport-${branchHotfix}`;
+        await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        //core.setOutput('From-Branch: ', backportBranchName);
+        //core.setOutput('PR-Base: ', pr.base.ref);
+
+        pr = await createPR(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
     }
 
     let sha = '';

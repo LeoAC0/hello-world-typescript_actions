@@ -28557,22 +28557,30 @@ const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
-    // Init REST API Client with auth token
-    //initClient();
-    const ref = `refs/heads/${branchName}`;
-    core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
+    const mainBranchName = 'main';
     try {
+        // Obtener información de la rama 'main'
+        const mainBranch = await (0, api_1.getClient)().repos.getBranch({
+            owner,
+            repo,
+            branch: mainBranchName,
+        });
+        const sha = mainBranch.data.commit.sha;
+        // Construir la referencia de la nueva rama
+        const ref = `refs/heads/${options.branchName}`;
+        core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
+        // Crear la nueva rama utilizando el SHA obtenido de 'main'
         await (0, api_1.getClient)().git.createRef({
             owner,
             repo,
             ref,
-            sha: 'main' // Cambiar segun la rama a usar
+            sha,
         });
         core.info(`Branch created successfully: ${ref}`);
     }
     catch (error) {
         const errorMessage = error.message;
-        core.error(`Error creating branch ${ref}: ${errorMessage}`);
+        core.error(`Error creating branch ${options.branchName}: ${errorMessage}`);
         throw error;
     }
 };
@@ -28652,6 +28660,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.start = void 0;
 const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
 const api_1 = __nccwpck_require__(8229);
 const pr_1 = __nccwpck_require__(4480);
 const validation_1 = __nccwpck_require__(4875);
@@ -28663,16 +28672,6 @@ const start = async () => {
     (0, api_1.initClient)(options.token);
     // Get open PR
     let pr = await (0, pr_1.getOpenPR)(options.prFromBranch, options.prToBranch);
-    if (pr !== null && options.prToBranch !== pr.base.ref) {
-        // La rama de destino de la PR existente es diferente a la especificada en las opciones
-        // Crea una nueva rama para el backport
-        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
-        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        core.setOutput('From-Branch: ', options.prToBranch);
-        core.setOutput('PR-Base: ', pr.base.ref);
-        // Actualiza la PR existente con los cambios de la nueva rama
-        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
-    }
     if (pr !== null && options.prFailIfExists) {
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
@@ -28689,7 +28688,13 @@ const start = async () => {
     }
     else {
         // Create PR if not exists
-        pr = await (0, pr_1.createPR)(options.prFromBranch, options.prToBranch, options.prTitle, options.prBody);
+        // Crea una nueva rama para el backport
+        const branchHotfix = github.context.payload.pull_request?.base?.ref;
+        const backportBranchName = `backport-${branchHotfix}`;
+        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        //core.setOutput('From-Branch: ', backportBranchName);
+        //core.setOutput('PR-Base: ', pr.base.ref);
+        pr = await (0, pr_1.createPR)(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
     }
     let sha = '';
     core.setOutput('pr-number', pr.number);
