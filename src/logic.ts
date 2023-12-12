@@ -40,8 +40,8 @@ const start = async (): Promise<void> => {
         const branchHotfix = github.context.payload.pull_request?.base?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        core.setOutput('From-Branch: ', backportBranchName);
-        core.setOutput('PR-Base: ', pr.base.ref);
+        //core.setOutput('From-Branch: ', backportBranchName);
+        //core.setOutput('PR-Base: ', pr.base.ref);
 
         pr = await createPR(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
     }

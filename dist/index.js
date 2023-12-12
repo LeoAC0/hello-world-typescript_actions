@@ -28692,8 +28692,8 @@ const start = async () => {
         const branchHotfix = github.context.payload.pull_request?.base?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        core.setOutput('From-Branch: ', backportBranchName);
-        core.setOutput('PR-Base: ', pr.base.ref);
+        //core.setOutput('From-Branch: ', backportBranchName);
+        //core.setOutput('PR-Base: ', pr.base.ref);
         pr = await (0, pr_1.createPR)(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
     }
     let sha = '';
