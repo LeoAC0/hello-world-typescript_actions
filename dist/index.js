@@ -28557,19 +28557,19 @@ const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
-    const mainBranchName = 'main';
+    const headBranchName = 'main';
     try {
-        // Obtener información de la rama 'main'
-        const mainBranch = await (0, api_1.getClient)().repos.getBranch({
+        // Crear rama a partir de 'headBranchName'
+        const headBranch = await (0, api_1.getClient)().repos.getBranch({
             owner,
             repo,
-            branch: mainBranchName,
+            branch: headBranchName,
         });
-        const sha = mainBranch.data.commit.sha;
+        const sha = headBranch.data.commit.sha;
         // Construir la referencia de la nueva rama
         const ref = `refs/heads/${options.branchName}`;
-        core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
-        // Crear la nueva rama utilizando el SHA obtenido de 'main'
+        core.info(`Creating branch ${ref} from ${headBranchName} in repo ${owner}/${repo}...`);
+        // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
         await (0, api_1.getClient)().git.createRef({
             owner,
             repo,
@@ -28679,7 +28679,6 @@ const start = async () => {
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
         core.setOutput('pr-number', pr.number);
         core.setOutput('pr-url', pr.html_url);
-        core.setOutput('pr-sha', '');
         return;
     }
     if (pr !== null) {
@@ -28692,14 +28691,10 @@ const start = async () => {
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        //core.setOutput('From-Branch: ', backportBranchName);
-        //core.setOutput('PR-Base: ', pr.base.ref);
         pr = await (0, pr_1.createPR)(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
     }
-    let sha = '';
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);
-    core.setOutput('pr-sha', sha);
 };
 exports.start = start;
 
