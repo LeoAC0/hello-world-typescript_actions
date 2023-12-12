@@ -14,24 +14,24 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
 
-    const mainBranchName = 'main';
+    const headBranchName = 'main';
 
     try {
-        // Obtener información de la rama 'main'
-        const mainBranch = await getClient().repos.getBranch({
+        // Crear rama a partir de 'headBranchName'
+        const headBranch = await getClient().repos.getBranch({
             owner,
             repo,
-            branch: mainBranchName,
+            branch: headBranchName,
         });
 
-        const sha = mainBranch.data.commit.sha;
+        const sha = headBranch.data.commit.sha;
 
         // Construir la referencia de la nueva rama
         const ref = `refs/heads/${options.branchName}`;
 
-        core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
+        core.info(`Creating branch ${ref} from ${headBranchName} in repo ${owner}/${repo}...`);
 
-        // Crear la nueva rama utilizando el SHA obtenido de 'main'
+        // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
         await getClient().git.createRef({
             owner,
             repo,
