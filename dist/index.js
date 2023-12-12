@@ -28559,7 +28559,7 @@ const createBranch = async (options) => {
     const repo = repoName || github.context.repo.repo;
     // Init REST API Client with auth token
     //initClient();
-    const ref = `refs/heads/${branchName}`;
+    const ref = `refs/heads/${options.branchName}`;
     core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
     try {
         await (0, api_1.getClient)().git.createRef({
@@ -28652,6 +28652,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.start = void 0;
 const core = __importStar(__nccwpck_require__(2186));
+const github = __importStar(__nccwpck_require__(5438));
 const api_1 = __nccwpck_require__(8229);
 const pr_1 = __nccwpck_require__(4480);
 const validation_1 = __nccwpck_require__(4875);
@@ -28680,7 +28681,8 @@ const start = async () => {
     else {
         // Create PR if not exists
         // Crea una nueva rama para el backport
-        const backportBranchName = `backport/${options.prFromBranch.toUpperCase()}`;
+        const branchHotfix = github.context.payload.pull_request?.base?.ref;
+        const backportBranchName = `backport-${branchHotfix}`;
         await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
         core.setOutput('From-Branch: ', backportBranchName);
         core.setOutput('PR-Base: ', pr.base.ref);
