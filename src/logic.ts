@@ -37,7 +37,7 @@ const start = async (): Promise<void> => {
         // Create PR if not exists
 
         // Crea una nueva rama para el backport
-        const branchHotfix = github.context.payload.pull_request?.base?.ref;
+        const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
         //core.setOutput('From-Branch: ', backportBranchName);
