@@ -28558,18 +28558,17 @@ const createBranch = async (options) => {
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
     const mainBranchName = 'main';
-    // Obtener el SHA del commit más reciente de la rama 'main'
-    const mainBranchRef = `refs/heads/${mainBranchName}`;
-    const mainBranch = await (0, api_1.getClient)().git.getRef({
-        owner,
-        repo,
-        ref: mainBranchRef,
-    });
-    const sha = mainBranch.data.object.sha;
-    // Construir la referencia de la nueva rama
-    const ref = `refs/heads/${options.branchName}`;
-    core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
     try {
+        // Obtener información de la rama 'main'
+        const mainBranch = await (0, api_1.getClient)().repos.getBranch({
+            owner,
+            repo,
+            branch: mainBranchName,
+        });
+        const sha = mainBranch.data.commit.sha;
+        // Construir la referencia de la nueva rama
+        const ref = `refs/heads/${options.branchName}`;
+        core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
         // Crear la nueva rama utilizando el SHA obtenido de 'main'
         await (0, api_1.getClient)().git.createRef({
             owner,
@@ -28581,7 +28580,7 @@ const createBranch = async (options) => {
     }
     catch (error) {
         const errorMessage = error.message;
-        core.error(`Error creating branch ${ref}: ${errorMessage}`);
+        core.error(`Error creating branch ${options.branchName}: ${errorMessage}`);
         throw error;
     }
 };
