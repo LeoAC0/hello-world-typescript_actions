@@ -17,7 +17,7 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
     // Init REST API Client with auth token
     //initClient();
 
-    const ref = `refs/heads/${branchName}`;
+    const ref = `refs/heads/${options.branchName}`;
 
     core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
 
