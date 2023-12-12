@@ -20,7 +20,7 @@ jobs:
 
       - name: Backport from main to next
         id: cmb
-        uses: LeoAC0/hello-world-typescript_actions@v1.6.8
+        uses: LeoAC0/hello-world-typescript_actions@v1.6.9
         with:
           token: ${{ secrets.TOKEN_TEST}}
           pr-from-branch: main #${{ env.PR_FROM_BRANCH }}
