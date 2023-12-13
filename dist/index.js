@@ -28552,23 +28552,33 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createBranch = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const crypto = __importStar(__nccwpck_require__(6113));
 const api_1 = __nccwpck_require__(8229);
+// Función para generar un hash SHA-256 único
+const generateUniqueHash = (input) => {
+    const hash = crypto.createHash('sha256');
+    hash.update(input);
+    return hash.digest('hex');
+};
 const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
     const headBranchName = 'main';
     try {
-        // Crear rama a partir de 'headBranchName'
+        // Usa como referencia la rama 'headBranchName'
         const headBranch = await (0, api_1.getClient)().repos.getBranch({
             owner,
             repo,
             branch: headBranchName,
         });
         const sha = headBranch.data.commit.sha;
+        // Generar un hash único basado en el nombre de la rama y un timestamp
+        const timestamp = new Date().getTime();
+        const inputForHash = `${options.branchName}-${timestamp}`;
+        const uniqueHash = generateUniqueHash(inputForHash);
         // Construir la referencia de la nueva rama
-        const ref = `refs/heads/${options.branchName}`;
-        core.info(`Creating branch ${ref} from ${headBranchName} in repo ${owner}/${repo}...`);
+        const ref = `refs/heads/${options.branchName}-${uniqueHash}`;
         // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
         await (0, api_1.getClient)().git.createRef({
             owner,
@@ -28576,6 +28586,7 @@ const createBranch = async (options) => {
             ref,
             sha,
         });
+        core.info(`Creating branch ${ref} from ${headBranchName} in repo ${owner}/${repo}...`);
         core.info(`Branch created successfully: ${ref}`);
     }
     catch (error) {
