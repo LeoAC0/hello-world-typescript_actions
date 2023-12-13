@@ -28577,7 +28577,8 @@ const createBranch = async (options) => {
         // Generar un hash único basado en el nombre de la rama y un timestamp
         const timestamp = new Date().getTime();
         const inputForHash = `${options.branchName}-${timestamp}`;
-        const uniqueHash = generateUniqueHash(inputForHash);
+        const fullHash = generateUniqueHash(inputForHash);
+        const uniqueHash = fullHash.slice(-6);
         exports.branchHash = branchHash = `${options.branchName}-${uniqueHash}`;
         // Construir la referencia de la nueva rama
         const ref = `refs/heads/${branchHash}`;
