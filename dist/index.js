@@ -28549,7 +28549,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createBranch = void 0;
+exports.branchHash = exports.createBranch = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const crypto = __importStar(__nccwpck_require__(6113));
@@ -28560,6 +28560,7 @@ const generateUniqueHash = (input) => {
     hash.update(input);
     return hash.digest('hex');
 };
+let branchHash;
 const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
     const owner = repoOwner || github.context.repo.owner;
@@ -28577,8 +28578,9 @@ const createBranch = async (options) => {
         const timestamp = new Date().getTime();
         const inputForHash = `${options.branchName}-${timestamp}`;
         const uniqueHash = generateUniqueHash(inputForHash);
+        exports.branchHash = branchHash = `${options.branchName}-${uniqueHash}`;
         // Construir la referencia de la nueva rama
-        const ref = `refs/heads/${options.branchName}-${uniqueHash}`;
+        const ref = `refs/heads/${branchHash}`;
         // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
         await (0, api_1.getClient)().git.createRef({
             owner,
@@ -28702,7 +28704,7 @@ const start = async () => {
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        pr = await (0, pr_1.createPR)(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
+        pr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
     }
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);
