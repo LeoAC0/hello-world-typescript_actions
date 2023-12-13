@@ -4,7 +4,7 @@ import * as github from '@actions/github';
 import { initClient } from './api';
 import { getOpenPR, createPR, updatePR } from './pr';
 import { readInputParameters } from './validation';
-import { createBranch } from './branch';
+import { createBranch, branchHash } from './branch';
 
 const start = async (): Promise<void> => {
     // Read input parameters from workflow
@@ -25,7 +25,6 @@ const start = async (): Promise<void> => {
 
         core.setOutput('pr-number', pr.number);
         core.setOutput('pr-url', pr.html_url);
-        core.setOutput('pr-sha', '');
 
         return;
     }
@@ -40,17 +39,11 @@ const start = async (): Promise<void> => {
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        //core.setOutput('From-Branch: ', backportBranchName);
-        //core.setOutput('PR-Base: ', pr.base.ref);
-
-        pr = await createPR(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
+        pr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
     }
-
-    let sha = '';
 
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);
-    core.setOutput('pr-sha', sha);
 };
 
 export {

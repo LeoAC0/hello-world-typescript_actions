@@ -28549,33 +28549,46 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createBranch = void 0;
+exports.branchHash = exports.createBranch = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
+const crypto = __importStar(__nccwpck_require__(6113));
 const api_1 = __nccwpck_require__(8229);
+// Función para generar un hash SHA-256 único
+const generateUniqueHash = (input) => {
+    const hash = crypto.createHash('sha256');
+    hash.update(input);
+    return hash.digest('hex');
+};
+let branchHash;
 const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
     const owner = repoOwner || github.context.repo.owner;
     const repo = repoName || github.context.repo.repo;
-    const mainBranchName = 'main';
+    const headBranchName = 'main';
     try {
-        // Obtener información de la rama 'main'
-        const mainBranch = await (0, api_1.getClient)().repos.getBranch({
+        // Usa como referencia la rama 'headBranchName'
+        const headBranch = await (0, api_1.getClient)().repos.getBranch({
             owner,
             repo,
-            branch: mainBranchName,
+            branch: headBranchName,
         });
-        const sha = mainBranch.data.commit.sha;
+        const sha = headBranch.data.commit.sha;
+        // Generar un hash único basado en el nombre de la rama y un timestamp
+        const timestamp = new Date().getTime();
+        const inputForHash = `${options.branchName}-${timestamp}`;
+        const uniqueHash = generateUniqueHash(inputForHash);
+        exports.branchHash = branchHash = `${options.branchName}-${uniqueHash}`;
         // Construir la referencia de la nueva rama
-        const ref = `refs/heads/${options.branchName}`;
-        core.info(`Creating branch ${ref} in repo ${owner}/${repo}...`);
-        // Crear la nueva rama utilizando el SHA obtenido de 'main'
+        const ref = `refs/heads/${branchHash}`;
+        // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
         await (0, api_1.getClient)().git.createRef({
             owner,
             repo,
             ref,
             sha,
         });
+        core.info(`Creating branch ${ref} from ${headBranchName} in repo ${owner}/${repo}...`);
         core.info(`Branch created successfully: ${ref}`);
     }
     catch (error) {
@@ -28679,7 +28692,6 @@ const start = async () => {
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
         core.setOutput('pr-number', pr.number);
         core.setOutput('pr-url', pr.html_url);
-        core.setOutput('pr-sha', '');
         return;
     }
     if (pr !== null) {
@@ -28692,14 +28704,10 @@ const start = async () => {
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        //core.setOutput('From-Branch: ', backportBranchName);
-        //core.setOutput('PR-Base: ', pr.base.ref);
-        pr = await (0, pr_1.createPR)(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
+        pr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
     }
-    let sha = '';
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);
-    core.setOutput('pr-sha', sha);
 };
 exports.start = start;
 
