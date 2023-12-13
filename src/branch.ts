@@ -17,6 +17,8 @@ const generateUniqueHash = (input: string): string => {
     return hash.digest('hex');
 };
 
+let branchHash: string;
+
 const createBranch = async (options: BranchOptions): Promise<void> => {
     const { branchName, repoOwner, repoName } = options;
     const owner = repoOwner || github.context.repo.owner;
@@ -38,9 +40,10 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
         const timestamp = new Date().getTime();
         const inputForHash = `${options.branchName}-${timestamp}`;
         const uniqueHash = generateUniqueHash(inputForHash);
+        branchHash = `${options.branchName}-${uniqueHash}`;
 
         // Construir la referencia de la nueva rama
-        const ref = `refs/heads/${options.branchName}-${uniqueHash}`;
+        const ref = `refs/heads/${branchHash}`;
         
         // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
         await getClient().git.createRef({
@@ -60,6 +63,7 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
 };
 
 export {
-    createBranch
+    createBranch,
+    branchHash
 };
 

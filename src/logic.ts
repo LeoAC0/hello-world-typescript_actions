@@ -4,7 +4,7 @@ import * as github from '@actions/github';
 import { initClient } from './api';
 import { getOpenPR, createPR, updatePR } from './pr';
 import { readInputParameters } from './validation';
-import { createBranch } from './branch';
+import { createBranch, branchHash } from './branch';
 
 const start = async (): Promise<void> => {
     // Read input parameters from workflow
@@ -39,7 +39,7 @@ const start = async (): Promise<void> => {
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
         await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        pr = await createPR(backportBranchName, options.prToBranch, options.prTitle, options.prBody);
+        pr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
     }
 
     core.setOutput('pr-number', pr.number);
