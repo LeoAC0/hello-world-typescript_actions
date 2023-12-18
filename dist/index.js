@@ -28695,12 +28695,7 @@ const start = async () => {
         core.setOutput('pr-url', pr.html_url);
         return;
     }
-    if (pr !== null) {
-        // Update current PR
-        pr = await (0, pr_1.updatePR)(pr.number, options.prTitle, options.prBody);
-    }
-    else {
-        // Create PR if not exists
+    if (pr !== null || pr == null) {
         // Crea una nueva rama para el backport
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
