@@ -20,7 +20,7 @@ jobs:
 
       - name: Backport from main to next
         id: cmb
-        uses: LeoAC0/hello-world-typescript_actions@v1.7.4
+        uses: LeoAC0/hello-world-typescript_actions@v1.6.2
         with:
           token: ${{ secrets.TOKEN_TEST}}
           pr-from-branch: main #${{ env.PR_FROM_BRANCH }}
@@ -28,7 +28,7 @@ jobs:
           pr-title: "PR main into next."
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
-          pr-update-if-exists: true
+          pr-update-if-exists: false
           maintainer-can-modify: false
 
 
