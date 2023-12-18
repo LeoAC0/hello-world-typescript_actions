@@ -29,12 +29,7 @@ const start = async (): Promise<void> => {
         return;
     }
 
-    if (pr !== null) {
-        // Update current PR
-        pr = await updatePR(pr.number, options.prTitle, options.prBody);
-    } else {
-        // Create PR if not exists
-
+    if (pr !== null || pr == null) {
         // Crea una nueva rama para el backport
         const branchHotfix = github.context.payload.pull_request?.head?.ref;
         const backportBranchName = `backport-${branchHotfix}`;
