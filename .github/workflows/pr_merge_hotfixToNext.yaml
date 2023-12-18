@@ -28,7 +28,7 @@ jobs:
           pr-title: "PR main into next."
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
-          pr-update-if-exists: false
+          pr-update-if-exists: true
           maintainer-can-modify: false
 
 
