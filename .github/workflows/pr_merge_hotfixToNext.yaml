@@ -23,9 +23,9 @@ jobs:
         uses: LeoAC0/hello-world-typescript_actions@v1.7.5
         with:
           token: ${{ secrets.TOKEN_TEST}}
-          pr-from-branch: main #${{ env.PR_FROM_BRANCH }}
+          pr-from-branch: main
           pr-to-branch: next
-          pr-title: "PR main into next."
+          pr-title: "Backport from branch: ${{ env.PR_FROM_BRANCH }}."
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
           pr-update-if-exists: true
