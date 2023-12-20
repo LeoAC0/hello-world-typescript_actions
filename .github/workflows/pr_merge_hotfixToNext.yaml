@@ -1,4 +1,4 @@
-name: Auto Merge to Next
+name: Backport
 on:
   pull_request:
     branches:
@@ -7,7 +7,7 @@ on:
       - closed
 
 jobs:
-  auto_merge:
+  backport_to_next:
     if: github.event.pull_request.merged == true && (contains(github.event.pull_request.head.ref,'HOTFIX') || contains(github.event.pull_request.head.ref,'hotfix'))
     runs-on: ubuntu-latest
     steps:
@@ -19,10 +19,9 @@ jobs:
         run: echo "PR_FROM_BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
 
       - name: Backport from main to next
-        id: cmb
+        id: bp
         uses: LeoAC0/hello-world-typescript_actions@v1.7.5
         with:
-          token: ${{ secrets.TOKEN_TEST}}
           pr-from-branch: main
           pr-to-branch: next
           pr-title: "Backport from branch: ${{ env.PR_FROM_BRANCH }}."
@@ -31,10 +30,9 @@ jobs:
           pr-update-if-exists: true
           maintainer-can-modify: false
 
-
       - name: Output from action
         run: |
-            echo "PR Number: ${{ steps.cmb.outputs.pr-number }}"
-            echo "PR URL: ${{ steps.cmb.outputs.pr-url }}"
-            echo "PR SHA: ${{ steps.cmb.outputs.pr-sha }}"
+            echo "PR Number: ${{ steps.bp.outputs.pr-number }}"
+            echo "PR URL: ${{ steps.bp.outputs.pr-url }}"
+            echo "PR SHA: ${{ steps.bp.outputs.pr-sha }}"
   
