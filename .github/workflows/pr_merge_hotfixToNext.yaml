@@ -22,6 +22,7 @@ jobs:
         id: bp
         uses: LeoAC0/hello-world-typescript_actions@v1.7.5
         with:
+          token: ${{ secrets.TOKEN_TEST}}
           pr-from-branch: main
           pr-to-branch: next
           pr-title: "Backport from branch: ${{ env.PR_FROM_BRANCH }}."
