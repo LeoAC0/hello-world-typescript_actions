@@ -28685,7 +28685,8 @@ const start = async () => {
     // Init REST API Client with auth token
     (0, api_1.initClient)(options.token);
     // Get open PR
-    let pr = await (0, pr_1.getOpenPR)(options.prFromBranch, options.prToBranch);
+    //let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
+    let pr = await (0, pr_1.listOpenBackportPRs)();
     if (pr !== null && options.prFailIfExists) {
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
@@ -28739,7 +28740,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createPR = exports.updatePR = exports.getOpenPR = void 0;
+exports.listOpenBackportPRs = exports.createPR = exports.updatePR = exports.getOpenPR = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const api_1 = __nccwpck_require__(8229);
@@ -28802,6 +28803,41 @@ const createPR = async (head, base, title, body, repoOwner = undefined, repoName
     throw new Error(`Error creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
 };
 exports.createPR = createPR;
+const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) => {
+    const owner = repoOwner ? repoOwner : github.context.repo.owner;
+    const repo = repoName ? repoName : github.context.repo.repo;
+    const state = 'open';
+    core.info(`Listing open PRs in repo ${owner}/${repo} with "backport" in head and "next" in base...`);
+    const parameters = { owner, repo, state };
+    const response = await (0, api_1.getClient)().pulls.list(parameters);
+    const backportPRs = response.data.filter((pr) => {
+        const isBackport = pr.head.ref.toLowerCase().includes('backport');
+        const isNextBase = pr.base.ref === 'next';
+        return isBackport && isNextBase;
+    });
+    if (backportPRs.length > 0) {
+        core.info(`Found open PRs with "backport" in head and "next" in base:`);
+        for (const pr of backportPRs) {
+            core.info(`# ${pr.number} (${pr.html_url})`);
+            // Actualizar la rama de la PR
+            await updateBranch(pr, 'main');
+        }
+        ;
+    }
+    else {
+        core.info(`No open PRs found with "backport" in head and "next" in base.`);
+    }
+    return backportPRs;
+};
+exports.listOpenBackportPRs = listOpenBackportPRs;
+const updateBranch = async (pr, newBase) => {
+    await (0, api_1.getClient)().pulls.updateBranch({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        pull_number: pr.number,
+        base: newBase
+    });
+};
 
 
 /***/ }),

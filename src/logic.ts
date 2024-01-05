@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 
 import { initClient } from './api';
-import { getOpenPR, createPR, updatePR } from './pr';
+import { getOpenPR, createPR, updatePR, listOpenBackportPRs } from './pr';
 import { readInputParameters } from './validation';
 import { createBranch, branchHash } from './branch';
 
@@ -14,7 +14,8 @@ const start = async (): Promise<void> => {
     initClient(options.token);
 
     // Get open PR
-    let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
+    //let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
+    let pr = await listOpenBackportPRs();
 
     if (pr !== null && options.prFailIfExists) {
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`)
