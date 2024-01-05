@@ -28818,16 +28818,15 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     const response = await (0, api_1.getClient)().pulls.list(parameters);
     const backportPRs = response.data.filter((pr) => {
         const isBackport = pr.head.ref.toLowerCase().includes('backport');
-        console.log(isBackport);
         const isNextBase = pr.base.ref === 'next';
-        console.log(isNextBase);
-        if (backportPRs.length > 0) {
-            core.info(`Found open PRs with "backport" in head and "next" in base:`);
-        }
-        else {
-            core.info(`No open PRs found with "backport" in head and "next" in base.`);
-        }
+        return isBackport && isNextBase;
     });
+    if (backportPRs.length > 0) {
+        core.info(`Found open PRs with "backport" in head and "next" in base:`);
+    }
+    else {
+        core.info(`No open PRs found with "backport" in head and "next" in base.`);
+    }
     return backportPRs;
 };
 exports.listOpenBackportPRs = listOpenBackportPRs;

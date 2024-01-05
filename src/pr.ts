@@ -90,19 +90,20 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
 
     const backportPRs = response.data.filter((pr: { head: { ref: string }, base: { ref: string }, number: number }) => {
         const isBackport = pr.head.ref.toLowerCase().includes('backport');
-        console.log(isBackport);
-        
         const isNextBase = pr.base.ref === 'next';
-        console.log(isNextBase);
-        if (backportPRs.length > 0) {
+
+        return isBackport && isNextBase;
+    });
+
+    if (backportPRs.length > 0) {
         core.info(`Found open PRs with "backport" in head and "next" in base:`);
     } else {
         core.info(`No open PRs found with "backport" in head and "next" in base.`);
     }
-    });
 
     return backportPRs;
 };
+
 
 const updateBranch = async (pr: { head: { ref: string }; number: number }, newBase: string) => {
     console.log("Estoy dentro del update branch");
