@@ -28751,7 +28751,6 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const api_1 = __nccwpck_require__(8229);
 const validation_1 = __nccwpck_require__(4875);
-const branch_1 = __nccwpck_require__(1674);
 const getOpenPR = async (head, base, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
@@ -28824,7 +28823,6 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         console.log(isNextBase);
         if (backportPRs.length > 0) {
             core.info(`Found open PRs with "backport" in head and "next" in base:`);
-            backportPRs.repos.merge(owner, repo, branch_1.branchHash, 'main');
         }
         else {
             core.info(`No open PRs found with "backport" in head and "next" in base.`);

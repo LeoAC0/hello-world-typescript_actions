@@ -96,12 +96,11 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         console.log(isNextBase);
         if (backportPRs.length > 0) {
         core.info(`Found open PRs with "backport" in head and "next" in base:`);
-        backportPRs.repos.merge(owner, repo, branchHash, 'main');
     } else {
         core.info(`No open PRs found with "backport" in head and "next" in base.`);
     }
     });
-    
+
     return backportPRs;
 };
 
