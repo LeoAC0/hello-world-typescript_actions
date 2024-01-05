@@ -118,7 +118,7 @@ const updateBranch = async (pr: { head: { ref: string }; number: number }, newBa
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         pull_number: pr.number,
-        base: newBase
+        //base: newBase
     });
 };
 
