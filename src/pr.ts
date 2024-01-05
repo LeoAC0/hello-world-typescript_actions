@@ -89,7 +89,10 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
 
     const backportPRs = response.data.filter((pr: { head: { ref: string }, base: { ref: string }, number: number }) => {
         const isBackport = pr.head.ref.toLowerCase().includes('backport');
+        console.log(isBackport);
+        
         const isNextBase = pr.base.ref === 'next';
+        console.log(isNextBase);
         return isBackport && isNextBase;
     });
 
@@ -109,6 +112,8 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
 };
 
 const updateBranch = async (pr: { head: { ref: string }; number: number }, newBase: string) => {
+    console.log("Estoy dentro del update branch");
+    
     await getClient().pulls.updateBranch({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,

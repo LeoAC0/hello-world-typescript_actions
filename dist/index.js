@@ -28812,7 +28812,9 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     const response = await (0, api_1.getClient)().pulls.list(parameters);
     const backportPRs = response.data.filter((pr) => {
         const isBackport = pr.head.ref.toLowerCase().includes('backport');
+        console.log(isBackport);
         const isNextBase = pr.base.ref === 'next';
+        console.log(isNextBase);
         return isBackport && isNextBase;
     });
     if (backportPRs.length > 0) {
@@ -28831,6 +28833,7 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
 };
 exports.listOpenBackportPRs = listOpenBackportPRs;
 const updateBranch = async (pr, newBase) => {
+    console.log("Estoy dentro del update branch");
     await (0, api_1.getClient)().pulls.updateBranch({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
