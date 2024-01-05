@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-import { initClient } from './api';
+import { initClient, getClient } from './api';
 import { getOpenPR, createPR, updatePR, listOpenBackportPRs } from './pr';
 import { readInputParameters } from './validation';
 import { createBranch, branchHash } from './branch';
@@ -39,7 +39,13 @@ const start = async (): Promise<void> => {
         // Mergea la rama de backport con main
         console.log("Dentro del else, encontro PR y va a mergear la rama backport");
         
-        pr.repos.merge(options.repoOwner, options.repoName, pr.base.ref, 'main');
+        await getClient().repos.merge({
+            owner: options.repoOwner,
+            repo: options.repoName,
+            base: pr.base.ref,
+            head: 'main',
+          });
+
         console.log("Merged main into " + branchHotfix);
     }
 
