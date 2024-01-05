@@ -28706,7 +28706,9 @@ const start = async () => {
         pr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
     }
     else {
-        pr.repos.merge(options.repoOwner, options.repoName, branch_1.branchHash, 'main');
+        // Mergea la rama de backport con main
+        console.log("Dentro del else, encontro PR y va a mergear la rama backport");
+        pr.repos.merge(options.repoOwner, options.repoName, pr.base.ref, 'main');
         console.log("Merged main into " + branchHotfix);
     }
     core.setOutput('pr-number', pr.number);

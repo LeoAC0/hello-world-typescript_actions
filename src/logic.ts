@@ -36,7 +36,10 @@ const start = async (): Promise<void> => {
         // Crea PR de backport
         pr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
     }else {
-        pr.repos.merge(options.repoOwner, options.repoName, branchHash, 'main');
+        // Mergea la rama de backport con main
+        console.log("Dentro del else, encontro PR y va a mergear la rama backport");
+        
+        pr.repos.merge(options.repoOwner, options.repoName, pr.base.ref, 'main');
         console.log("Merged main into " + branchHotfix);
     }
 
