@@ -29,13 +29,15 @@ const start = async (): Promise<void> => {
 
         return;
     }
-
-    if (pr !== null || pr == null) {
+    const branchHotfix = github.context.payload.pull_request?.head?.ref;
+    if (pr == null) {
         // Crea una nueva rama para el backport
-        const branchHotfix = github.context.payload.pull_request?.head?.ref;
-        const backportBranchName = `backport-${branchHotfix}`;
-        await createBranch({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        await createBranch({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
+        // Crea PR de backport
         pr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
+    }else {
+        pr.repos.merge(options.repoOwner, options.repoName, branchHash, 'main');
+        console.log("Merged main into " + branchHotfix);
     }
 
     core.setOutput('pr-number', pr.number);

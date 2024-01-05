@@ -3,6 +3,7 @@ import * as github from '@actions/github';
 
 import { getClient } from './api';
 import { isDefaultTitle } from './validation';
+import { branchHash } from './branch';
 
 const getOpenPR = async (head: string, base: string, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
@@ -93,21 +94,14 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         
         const isNextBase = pr.base.ref === 'next';
         console.log(isNextBase);
-        return isBackport && isNextBase;
-    });
-
-    if (backportPRs.length > 0) {
+        if (backportPRs.length > 0) {
         core.info(`Found open PRs with "backport" in head and "next" in base:`);
-        for (const pr of backportPRs) {
-            core.info(`# ${pr.number} (${pr.html_url})`);
-
-            // Actualizar la rama de la PR
-            await updateBranch(pr, 'main');
-        };
+        backportPRs.repos.merge(owner, repo, branchHash, 'main');
     } else {
         core.info(`No open PRs found with "backport" in head and "next" in base.`);
     }
-
+    });
+    
     return backportPRs;
 };
 

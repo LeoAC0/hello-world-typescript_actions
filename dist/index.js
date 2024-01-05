@@ -28561,10 +28561,12 @@ const generateUniqueHash = (input) => {
     return hash.digest('hex');
 };
 let branchHash;
+let owner = github.context.repo.owner;
+let repo = github.context.repo.repo;
 const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
-    const owner = repoOwner || github.context.repo.owner;
-    const repo = repoName || github.context.repo.repo;
+    owner = repoOwner || github.context.repo.owner;
+    repo = repoName || github.context.repo.repo;
     const headBranchName = 'main';
     try {
         // Usa como referencia la rama 'headBranchName'
@@ -28579,7 +28581,7 @@ const createBranch = async (options) => {
         const inputForHash = `${options.branchName}-${timestamp}`;
         const fullHash = generateUniqueHash(inputForHash);
         const uniqueHash = fullHash.slice(-6);
-        exports.branchHash = branchHash = `${options.branchName}-${uniqueHash}`;
+        exports.branchHash = branchHash = `backport-${uniqueHash}`;
         // Construir la referencia de la nueva rama
         const ref = `refs/heads/${branchHash}`;
         // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
@@ -28696,12 +28698,16 @@ const start = async () => {
         core.setOutput('pr-url', pr.html_url);
         return;
     }
-    if (pr !== null || pr == null) {
+    const branchHotfix = github.context.payload.pull_request?.head?.ref;
+    if (pr == null) {
         // Crea una nueva rama para el backport
-        const branchHotfix = github.context.payload.pull_request?.head?.ref;
-        const backportBranchName = `backport-${branchHotfix}`;
-        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
+        await (0, branch_1.createBranch)({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
+        // Crea PR de backport
         pr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
+    }
+    else {
+        pr.repos.merge(options.repoOwner, options.repoName, branch_1.branchHash, 'main');
+        console.log("Merged main into " + branchHotfix);
     }
     core.setOutput('pr-number', pr.number);
     core.setOutput('pr-url', pr.html_url);
@@ -28745,6 +28751,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const api_1 = __nccwpck_require__(8229);
 const validation_1 = __nccwpck_require__(4875);
+const branch_1 = __nccwpck_require__(1674);
 const getOpenPR = async (head, base, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
@@ -28815,20 +28822,14 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         console.log(isBackport);
         const isNextBase = pr.base.ref === 'next';
         console.log(isNextBase);
-        return isBackport && isNextBase;
-    });
-    if (backportPRs.length > 0) {
-        core.info(`Found open PRs with "backport" in head and "next" in base:`);
-        for (const pr of backportPRs) {
-            core.info(`# ${pr.number} (${pr.html_url})`);
-            // Actualizar la rama de la PR
-            await updateBranch(pr, 'main');
+        if (backportPRs.length > 0) {
+            core.info(`Found open PRs with "backport" in head and "next" in base:`);
+            backportPRs.repos.merge(owner, repo, branch_1.branchHash, 'main');
         }
-        ;
-    }
-    else {
-        core.info(`No open PRs found with "backport" in head and "next" in base.`);
-    }
+        else {
+            core.info(`No open PRs found with "backport" in head and "next" in base.`);
+        }
+    });
     return backportPRs;
 };
 exports.listOpenBackportPRs = listOpenBackportPRs;

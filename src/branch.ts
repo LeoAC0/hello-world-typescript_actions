@@ -18,11 +18,13 @@ const generateUniqueHash = (input: string): string => {
 };
 
 let branchHash: string;
+let owner = github.context.repo.owner;
+let repo = github.context.repo.repo;
 
 const createBranch = async (options: BranchOptions): Promise<void> => {
     const { branchName, repoOwner, repoName } = options;
-    const owner = repoOwner || github.context.repo.owner;
-    const repo = repoName || github.context.repo.repo;
+    owner = repoOwner || github.context.repo.owner;
+    repo = repoName || github.context.repo.repo;
 
     const headBranchName = 'main';
 
@@ -42,7 +44,7 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
         const fullHash = generateUniqueHash(inputForHash);
         const uniqueHash = fullHash.slice(-6);
 
-        branchHash = `${options.branchName}-${uniqueHash}`;
+        branchHash = `backport-${uniqueHash}`;
 
         // Construir la referencia de la nueva rama
         const ref = `refs/heads/${branchHash}`;
