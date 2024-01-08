@@ -44,7 +44,7 @@ const start = async (): Promise<void> => {
         await getClient().repos.merge({
             owner: options.repoOwner,
             repo: options.repoName,
-            base: pr.base.ref,
+            base: pr.head.ref,
             head: 'main',
         });
 

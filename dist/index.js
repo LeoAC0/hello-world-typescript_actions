@@ -28713,7 +28713,7 @@ const start = async () => {
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner,
             repo: options.repoName,
-            base: pr.base.ref,
+            base: pr.head.ref,
             head: 'main',
         });
         console.log("Merged main into " + branchHotfix);
