@@ -5,6 +5,13 @@ import { getClient } from './api';
 import { isDefaultTitle } from './validation';
 import { branchHash } from './branch';
 
+interface PullsListResponseItem {
+    head: { ref: string };
+    base: { ref: string };
+    number: number;
+    html_url: string
+}
+
 const getOpenPR = async (head: string, base: string, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
@@ -82,26 +89,32 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
     const state = 'open';
+    const base = 'next';
+    const headPattern = 'backport'; // Patrón para buscar en el head
 
-    core.info(`Listing open PRs in repo ${owner}/${repo} with "backport" in head and "next" in base...`);
+    core.info(`Listing open PRs in repo ${owner}/${repo} with "${headPattern}" in head and "${base}" in base...`);
 
-    const parameters = { owner, repo, state };
+    const parameters = { owner, repo, state, base };
     const response = await getClient().pulls.list(parameters);
 
-    const backportPRs = response.data.filter((pr: { head: { ref: string }, base: { ref: string }, number: number }) => {
-        const isBackport = pr.head.ref.toLowerCase().includes('backport');
-        const isNextBase = pr.base.ref === 'next';
-        
-        console.log(`isNextBase = ${isNextBase}`);
-        console.log(`isBackport = ${isBackport}`);
-        
-        return isBackport && isNextBase;
+    const backportPRs: PullsListResponseItem[] = response.data.filter((pr: PullsListResponseItem) => {
+        // Utilizar expresión regular para buscar "backport" en el head
+        const regex = new RegExp(headPattern, 'i'); // 'i' para hacer la búsqueda insensible a mayúsculas/minúsculas
+        return regex.test(pr.head.ref);
     });
 
     if (backportPRs.length > 0) {
-        core.info(`Found open PRs with "backport" in head and "next" in base: ${backportPRs}`);
+        core.info(`Found open PRs with "${headPattern}" in head and "${base}" in base:`);
+        
+        // Mostrar detalles de cada PR
+        backportPRs.forEach((pr: PullsListResponseItem) => {
+            core.info(`PR Number: ${pr.number}, Head Ref: ${pr.head.ref}, Base Ref: ${pr.base.ref}`);
+        });
+
+        core.info(`Content of backportPRs: ${JSON.stringify(backportPRs, null, 2)}`);
+
     } else {
-        core.info(`No open PRs found with "backport" in head and "next" in base.`);
+        core.info(`No open PRs found with "${headPattern}" in head and "${base}" in base.`);
     }
 
     return backportPRs;
@@ -123,5 +136,6 @@ export {
     getOpenPR,
     updatePR,
     createPR,
-    listOpenBackportPRs
+    listOpenBackportPRs,
+    PullsListResponseItem
 };

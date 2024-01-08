@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 
 import { initClient, getClient } from './api';
-import { getOpenPR, createPR, updatePR, listOpenBackportPRs } from './pr';
+import { getOpenPR, createPR, updatePR, listOpenBackportPRs, PullsListResponseItem } from './pr';
 import { readInputParameters } from './validation';
 import { createBranch, branchHash } from './branch';
 
@@ -13,46 +13,49 @@ const start = async (): Promise<void> => {
     // Init REST API Client with auth token
     initClient(options.token);
 
-    // Get open PR
-    //let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
-    let pr = await listOpenBackportPRs();
+    // Get open PRs
+    let prs: PullsListResponseItem[] = await listOpenBackportPRs();
 
-    if (pr !== null && options.prFailIfExists) {
-        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`)
+    if (prs.length > 0 && options.prFailIfExists) {
+        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
+        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
 
-    if (pr !== null && !options.prUpdateIfExists) {
+    if (prs.length > 0 && !options.prUpdateIfExists) {
+        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
-
         core.setOutput('pr-number', pr.number);
         core.setOutput('pr-url', pr.html_url);
-
         return;
     }
+
     const branchHotfix = github.context.payload.pull_request?.head?.ref;
-    if (pr == null) {
-        // Crea una nueva rama para el backport
+    if (prs.length === 0) {
+        // No se encontraron PRs abiertos, así que creamos uno
         await createBranch({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
-        // Crea PR de backport
-        pr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
-    }else {
-        // Mergea la rama de backport con main
-        console.log("Dentro del else, encontro PR y va a mergear la rama backport");
+        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
+        prs.push(newPr);
+    } else {
+        // Mergeamos la rama de backport con main
+        console.log("Dentro del else, encontró PR y va a mergear la rama backport");
         
+        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
+
         await getClient().repos.merge({
             owner: options.repoOwner,
             repo: options.repoName,
             base: pr.base.ref,
             head: 'main',
-          });
+        });
 
         console.log("Merged main into " + branchHotfix);
     }
 
-    core.setOutput('pr-number', pr.number);
-    core.setOutput('pr-url', pr.html_url);
+    core.setOutput('pr-number', prs[0].number);
+    core.setOutput('pr-url', prs[0].html_url);
 };
 
 export {
     start
 };
+
