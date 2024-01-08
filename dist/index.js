@@ -28561,10 +28561,12 @@ const generateUniqueHash = (input) => {
     return hash.digest('hex');
 };
 let branchHash;
+let owner = github.context.repo.owner;
+let repo = github.context.repo.repo;
 const createBranch = async (options) => {
     const { branchName, repoOwner, repoName } = options;
-    const owner = repoOwner || github.context.repo.owner;
-    const repo = repoName || github.context.repo.repo;
+    owner = repoOwner || github.context.repo.owner;
+    repo = repoName || github.context.repo.repo;
     const headBranchName = 'main';
     try {
         // Usa como referencia la rama 'headBranchName'
@@ -28579,7 +28581,7 @@ const createBranch = async (options) => {
         const inputForHash = `${options.branchName}-${timestamp}`;
         const fullHash = generateUniqueHash(inputForHash);
         const uniqueHash = fullHash.slice(-6);
-        exports.branchHash = branchHash = `${options.branchName}-${uniqueHash}`;
+        exports.branchHash = branchHash = `backport-${uniqueHash}`;
         // Construir la referencia de la nueva rama
         const ref = `refs/heads/${branchHash}`;
         // Crear la nueva rama utilizando el SHA obtenido de 'headBranchName'
@@ -28684,27 +28686,41 @@ const start = async () => {
     const options = (0, validation_1.readInputParameters)();
     // Init REST API Client with auth token
     (0, api_1.initClient)(options.token);
-    // Get open PR
-    //let pr = await getOpenPR(options.prFromBranch, options.prToBranch);
-    let pr = await (0, pr_1.listOpenBackportPRs)();
-    if (pr !== null && options.prFailIfExists) {
+    // Get open PRs
+    let prs = await (0, pr_1.listOpenBackportPRs)();
+    if (prs.length > 0 && options.prFailIfExists) {
+        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
-    if (pr !== null && !options.prUpdateIfExists) {
+    if (prs.length > 0 && !options.prUpdateIfExists) {
+        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
         core.setOutput('pr-number', pr.number);
         core.setOutput('pr-url', pr.html_url);
         return;
     }
-    if (pr !== null || pr == null) {
-        // Crea una nueva rama para el backport
-        const branchHotfix = github.context.payload.pull_request?.head?.ref;
-        const backportBranchName = `backport-${branchHotfix}`;
-        await (0, branch_1.createBranch)({ branchName: backportBranchName, repoOwner: options.repoOwner, repoName: options.repoName });
-        pr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
+    const branchHotfix = github.context.payload.pull_request?.head?.ref;
+    if (prs.length === 0) {
+        // No se encontraron PRs abiertos, así que creamos uno
+        await (0, branch_1.createBranch)({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
+        const newPr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
+        prs.push(newPr);
     }
-    core.setOutput('pr-number', pr.number);
-    core.setOutput('pr-url', pr.html_url);
+    else {
+        // Mergeamos la rama de backport con main
+        console.log("Dentro del else, encontró PR y va a mergear la rama backport");
+        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
+        core.info(`Content of PR: ${JSON.stringify(options, null, 2)}`);
+        await (0, api_1.getClient)().repos.merge({
+            owner: options.repoOwner || github.context.repo.owner,
+            repo: options.repoName || github.context.repo.repo,
+            base: pr.head.ref,
+            head: 'main',
+        });
+        console.log("Merged main into " + branchHotfix);
+    }
+    core.setOutput('pr-number', prs[0].number);
+    core.setOutput('pr-url', prs[0].html_url);
 };
 exports.start = start;
 
@@ -28807,27 +28823,26 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
     const state = 'open';
-    core.info(`Listing open PRs in repo ${owner}/${repo} with "backport" in head and "next" in base...`);
-    const parameters = { owner, repo, state };
+    const base = 'next';
+    const headPattern = 'backport'; // Patrón para buscar en el head
+    core.info(`Listing open PRs in repo ${owner}/${repo} with "${headPattern}" in head and "${base}" in base...`);
+    const parameters = { owner, repo, state, base };
     const response = await (0, api_1.getClient)().pulls.list(parameters);
     const backportPRs = response.data.filter((pr) => {
-        const isBackport = pr.head.ref.toLowerCase().includes('backport');
-        console.log(isBackport);
-        const isNextBase = pr.base.ref === 'next';
-        console.log(isNextBase);
-        return isBackport && isNextBase;
+        // Utilizar expresión regular para buscar "backport" en el head
+        const regex = new RegExp(headPattern, 'i'); // 'i' para hacer la búsqueda insensible a mayúsculas/minúsculas
+        return regex.test(pr.head.ref);
     });
     if (backportPRs.length > 0) {
-        core.info(`Found open PRs with "backport" in head and "next" in base:`);
-        for (const pr of backportPRs) {
-            core.info(`# ${pr.number} (${pr.html_url})`);
-            // Actualizar la rama de la PR
-            await updateBranch(pr, 'main');
-        }
-        ;
+        core.info(`Found open PRs with "${headPattern}" in head and "${base}" in base:`);
+        // Mostrar detalles de cada PR
+        backportPRs.forEach((pr) => {
+            core.info(`PR Number: ${pr.number}, Head Ref: ${pr.head.ref}, Base Ref: ${pr.base.ref}`);
+        });
+        core.info(`Content of backportPRs: ${JSON.stringify(backportPRs, null, 2)}`);
     }
     else {
-        core.info(`No open PRs found with "backport" in head and "next" in base.`);
+        core.info(`No open PRs found with "${headPattern}" in head and "${base}" in base.`);
     }
     return backportPRs;
 };
