@@ -41,11 +41,11 @@ const start = async (): Promise<void> => {
         
         const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
 
-        core.info(`Content of PR: ${JSON.stringify(pr, null, 2)}`);
+        core.info(`Content of PR: ${JSON.stringify(options, null, 2)}`);
 
         await getClient().repos.merge({
-            owner: options.repoOwner,
-            repo: options.repoName,
+            owner: options.repoOwner || github.context.repo.owner,
+            repo: options.repoName || github.context.repo.repo,
             base: pr.head.ref,
             head: 'main',
         });

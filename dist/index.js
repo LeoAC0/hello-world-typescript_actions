@@ -28710,10 +28710,10 @@ const start = async () => {
         // Mergeamos la rama de backport con main
         console.log("Dentro del else, encontró PR y va a mergear la rama backport");
         const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
-        core.info(`Content of PR: ${JSON.stringify(pr, null, 2)}`);
+        core.info(`Content of PR: ${JSON.stringify(options, null, 2)}`);
         await (0, api_1.getClient)().repos.merge({
-            owner: options.repoOwner,
-            repo: options.repoName,
+            owner: options.repoOwner || github.context.repo.owner,
+            repo: options.repoName || github.context.repo.repo,
             base: pr.head.ref,
             head: 'main',
         });
