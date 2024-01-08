@@ -28689,11 +28689,11 @@ const start = async () => {
     // Get open PRs
     let prs = await (0, pr_1.listOpenBackportPRs)();
     if (prs.length > 0 && options.prFailIfExists) {
-        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
+        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
         throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
     }
     if (prs.length > 0 && !options.prUpdateIfExists) {
-        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
+        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
         core.setOutput('pr-number', pr.number);
         core.setOutput('pr-url', pr.html_url);
@@ -28708,9 +28708,7 @@ const start = async () => {
     }
     else {
         // Mergeamos la rama de backport con main
-        console.log("Dentro del else, encontró PR y va a mergear la rama backport");
-        const pr = prs[0]; // Aquí asumimos que tomas el primer PR de la lista
-        core.info(`Content of PR: ${JSON.stringify(options, null, 2)}`);
+        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
@@ -28834,12 +28832,11 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         return regex.test(pr.head.ref);
     });
     if (backportPRs.length > 0) {
-        core.info(`Found open PRs with "${headPattern}" in head and "${base}" in base:`);
+        core.info(`Found open PRs with "${headPattern}" in branch head and "${base}" in branch base:`);
         // Mostrar detalles de cada PR
         backportPRs.forEach((pr) => {
-            core.info(`PR Number: ${pr.number}, Head Ref: ${pr.head.ref}, Base Ref: ${pr.base.ref}`);
+            core.info(`PR Number: ${pr.number}, Branch Head: ${pr.head.ref}, Branch Base: ${pr.base.ref}`);
         });
-        core.info(`Content of backportPRs: ${JSON.stringify(backportPRs, null, 2)}`);
     }
     else {
         core.info(`No open PRs found with "${headPattern}" in head and "${base}" in base.`);
@@ -28847,15 +28844,6 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     return backportPRs;
 };
 exports.listOpenBackportPRs = listOpenBackportPRs;
-const updateBranch = async (pr, newBase) => {
-    console.log("Estoy dentro del update branch");
-    await (0, api_1.getClient)().pulls.updateBranch({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        pull_number: pr.number,
-        //base: newBase
-    });
-};
 
 
 /***/ }),

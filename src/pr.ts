@@ -3,7 +3,6 @@ import * as github from '@actions/github';
 
 import { getClient } from './api';
 import { isDefaultTitle } from './validation';
-import { branchHash } from './branch';
 
 interface PullsListResponseItem {
     head: { ref: string };
@@ -104,32 +103,18 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     });
 
     if (backportPRs.length > 0) {
-        core.info(`Found open PRs with "${headPattern}" in head and "${base}" in base:`);
+        core.info(`Found open PRs with "${headPattern}" in branch head and "${base}" in branch base:`);
         
         // Mostrar detalles de cada PR
         backportPRs.forEach((pr: PullsListResponseItem) => {
-            core.info(`PR Number: ${pr.number}, Head Ref: ${pr.head.ref}, Base Ref: ${pr.base.ref}`);
+            core.info(`PR Number: ${pr.number}, Branch Head: ${pr.head.ref}, Branch Base: ${pr.base.ref}`);
         });
-
-        core.info(`Content of backportPRs: ${JSON.stringify(backportPRs, null, 2)}`);
 
     } else {
         core.info(`No open PRs found with "${headPattern}" in head and "${base}" in base.`);
     }
 
     return backportPRs;
-};
-
-
-const updateBranch = async (pr: { head: { ref: string }; number: number }, newBase: string) => {
-    console.log("Estoy dentro del update branch");
-    
-    await getClient().pulls.updateBranch({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        pull_number: pr.number,
-        //base: newBase
-    });
 };
 
 export {
