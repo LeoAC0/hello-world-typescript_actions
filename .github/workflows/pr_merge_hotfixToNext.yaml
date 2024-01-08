@@ -25,7 +25,7 @@ jobs:
           token: ${{ secrets.TOKEN_TEST}}
           pr-from-branch: main
           pr-to-branch: next
-          pr-title: "🚨 Backport from branch: 🔥${{ env.PR_FROM_BRANCH }}🔥."
+          pr-title: "🚨 Backport from 🔥HOTFIX🔥."
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
           pr-update-if-exists: true
