@@ -40,13 +40,12 @@ jobs:
         id: extract-hotfix-titles
         run: |
             hotfix_titles=()
-            for sha in $(git rev-list --ancestry-path ${{ github.event.before }}..HEAD); do
+            for sha in $(git rev-list --merges --ancestry-path ${{ github.event.before }}..HEAD); do
               title=$(git log -1 --pretty=%s $sha)
               hotfix_titles+=("* [${title}]($(git log -1 --pretty=%b $sha | grep -o 'http[s]*://[^\ ]*'))")
             done
             echo "hotfix-titles=${hotfix_titles[*]}" >> $GITHUB_ENV
-        
-
+  
       - name: Output from action
         run: |
             echo "PR Number: ${{ steps.bp.outputs.pr-number }}"
