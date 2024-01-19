@@ -36,9 +36,9 @@ jobs:
           pr-update-if-exists: true
           maintainer-can-modify: false
       
-        - name: Extract Hotfix Titles
-          id: extract-hotfix-titles
-          run: |
+      - name: Extract Hotfix Titles
+        id: extract-hotfix-titles
+        run: |
             hotfix_titles=()
             for sha in $(git rev-list --ancestry-path ${{ github.event.before }}..HEAD); do
               title=$(git log -1 --pretty=%s $sha)
