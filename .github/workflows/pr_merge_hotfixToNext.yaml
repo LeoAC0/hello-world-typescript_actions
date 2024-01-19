@@ -14,9 +14,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Set name PR-From-Branch
-        id: set_branch
-        run: echo "PR_FROM_BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+      # - name: Set name PR-From-Branch
+      #   id: set_branch
+      #   run: echo "PR_FROM_BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
 
       - name: Backport from main to next
         id: bp
