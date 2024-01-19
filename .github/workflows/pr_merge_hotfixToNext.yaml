@@ -22,19 +22,29 @@ jobs:
         id: bp
         uses: LeoAC0/hello-world-typescript_actions@v1.8.9
         with:
-          token: ${{ secrets.TOKEN_TEST}}
+          token: ${{ secrets.TOKEN_TEST }}
           pr-from-branch: main
           pr-to-branch: next
           pr-title: "🚨 Backport from 🔥HOTFIX🔥."
           pr-body: |
             Auto PRs into NEXT.
       
-            **Merged Branch Title:** ${{ github.event.pull_request.title }}
             **Merged PR Link:** ${{ github.event.pull_request.html_url }}
+            **Hotfixes Included:**
+            ${{ join(steps.extract-hotfix-titles.outputs.hotfix-titles, '\n') }}
           pr-fail-if-exists: false
           pr-update-if-exists: true
           maintainer-can-modify: false
       
+      - name: Extract Hotfix Titles
+        id: extract-hotfix-titles
+        run: |
+          hotfix_titles=()
+          for sha in $(git rev-list HEAD --not $(git merge-base HEAD ${{ github.event.before }})..HEAD); do
+            title=$(git log -1 --pretty=%s $sha)
+            hotfix_titles+=("* [${title}]($(git log -1 --pretty=%b $sha | grep -o 'http[s]*://[^\ ]*'))")
+          done
+          echo "hotfix-titles=${hotfix_titles[*]}" >> $GITHUB_ENV
 
       - name: Output from action
         run: |
