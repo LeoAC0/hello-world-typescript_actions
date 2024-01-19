@@ -36,7 +36,7 @@ jobs:
           pr-update-if-exists: true
           maintainer-can-modify: false
       
-        - name: Extract Hotfix Titles
+      - name: Extract Hotfix Titles
           id: extract-hotfix-titles
           run: |
             hotfix_titles=()
