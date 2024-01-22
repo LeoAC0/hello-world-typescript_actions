@@ -20,7 +20,7 @@ jobs:
 
       - name: Backport from main to next
         id: bp
-        uses: LeoAC0/hello-world-typescript_actions@v1.9.1.2
+        uses: LeoAC0/hello-world-typescript_actions@v1.9.1
         with:
           pr-from-branch: main
           pr-to-branch: next
