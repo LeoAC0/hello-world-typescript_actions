@@ -71,9 +71,9 @@ const start = async (): Promise<void> => {
         
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
 
-        console.log("pr:" + pr);
-        console.log("prs:" + prs);
-
+        core.info(`pr: ${pr}`);
+        core.info(`prs: ${prs}`);
+        
         await getClient().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,

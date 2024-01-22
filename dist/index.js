@@ -28732,8 +28732,8 @@ const start = async () => {
     else {
         // Mergeamos la rama de backport con main
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
-        console.log("pr:" + pr);
-        console.log("prs:" + prs);
+        core.info(`pr: ${pr}`);
+        core.info(`prs: ${prs}`);
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
