@@ -28691,7 +28691,7 @@ const getPRDetails = async (owner, repo, prNumber) => {
 };
 const updateBackportPRBody = async (backportPr, hotfixPRs) => {
     const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
-        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
+        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.base.repo.name, hotfixPR.number);
         return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
     });
     const hotfixInfos = await Promise.all(prInfoPromises);
@@ -28699,7 +28699,7 @@ const updateBackportPRBody = async (backportPr, hotfixPRs) => {
     console.log("updatedBody: " + updatedBody);
     await (0, api_1.getClient)().pulls.update({
         owner: github.context.repo.owner,
-        repo: backportPr.repo.name,
+        repo: backportPr.base.repo.name,
         pull_number: backportPr.number,
         body: updatedBody,
     });
