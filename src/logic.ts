@@ -12,7 +12,8 @@ const getPRDetails = async (owner: string, repo: string, prNumber: number): Prom
         repo,
         pull_number: prNumber,
     });
-
+    console.log(response.data);
+    
     return response.data;
 };
 
@@ -72,7 +73,7 @@ const start = async (): Promise<void> => {
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
 
         core.info(`pr: ${pr}`);
-        core.info(`prs: ${prs}`);
+        core.info(`prs: ${prs[0]}`);
         
         await getClient().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,

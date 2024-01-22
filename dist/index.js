@@ -28687,6 +28687,7 @@ const getPRDetails = async (owner, repo, prNumber) => {
         repo,
         pull_number: prNumber,
     });
+    console.log(response.data);
     return response.data;
 };
 const updateBackportPRBody = async (backportPr, hotfixPRs) => {
@@ -28733,7 +28734,7 @@ const start = async () => {
         // Mergeamos la rama de backport con main
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
         core.info(`pr: ${pr}`);
-        core.info(`prs: ${prs}`);
+        core.info(`prs: ${prs[0]}`);
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
