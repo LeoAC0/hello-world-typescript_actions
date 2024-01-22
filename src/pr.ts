@@ -7,6 +7,7 @@ import { isDefaultTitle } from './validation';
 interface PullsListResponseItem {
     head: { ref: string };
     base: { ref: string };
+    repo: { name: string };
     number: number;
     html_url: string
 }

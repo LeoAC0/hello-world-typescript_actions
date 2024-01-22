@@ -28681,6 +28681,28 @@ const api_1 = __nccwpck_require__(8229);
 const pr_1 = __nccwpck_require__(4480);
 const validation_1 = __nccwpck_require__(4875);
 const branch_1 = __nccwpck_require__(1674);
+const getPRDetails = async (owner, repo, prNumber) => {
+    const response = await (0, api_1.getClient)().pulls.get({
+        owner,
+        repo,
+        pull_number: prNumber,
+    });
+    return response.data;
+};
+const updateBackportPRBody = async (backportPr, hotfixPRs) => {
+    const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
+        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
+        return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
+    });
+    const hotfixInfos = await Promise.all(prInfoPromises);
+    const updatedBody = `## Backport PR\n\nOriginal PRs included:\n${hotfixInfos.join('\n')}`;
+    await (0, api_1.getClient)().pulls.update({
+        owner: github.context.repo.owner,
+        repo: backportPr.repo.name,
+        pull_number: backportPr.number,
+        body: updatedBody,
+    });
+};
 const start = async () => {
     // Read input parameters from workflow
     const options = (0, validation_1.readInputParameters)();
@@ -28708,13 +28730,14 @@ const start = async () => {
     }
     else {
         // Mergeamos la rama de backport con main
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
+        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
             base: pr.head.ref,
             head: 'main',
         });
+        await updateBackportPRBody(pr, prs);
         console.log("Merged main into " + branchHotfix);
     }
     core.setOutput('pr-number', prs[0].number);

@@ -6,6 +6,34 @@ import { createPR, listOpenBackportPRs, PullsListResponseItem } from './pr';
 import { readInputParameters } from './validation';
 import { createBranch, branchHash } from './branch';
 
+const getPRDetails = async (owner: string, repo: string, prNumber: number): Promise<any> => {
+    const response = await getClient().pulls.get({
+        owner,
+        repo,
+        pull_number: prNumber,
+    });
+
+    return response.data;
+};
+
+const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs: PullsListResponseItem[]): Promise<void> => {
+    const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
+        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
+        return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
+    });
+
+    const hotfixInfos = await Promise.all(prInfoPromises);
+
+    const updatedBody = `## Backport PR\n\nOriginal PRs included:\n${hotfixInfos.join('\n')}`;
+
+    await getClient().pulls.update({
+        owner: github.context.repo.owner,
+        repo: backportPr.repo.name,
+        pull_number: backportPr.number,
+        body: updatedBody,
+    });
+};
+
 const start = async (): Promise<void> => {
     // Read input parameters from workflow
     const options = readInputParameters();
@@ -39,7 +67,7 @@ const start = async (): Promise<void> => {
     } else {
         // Mergeamos la rama de backport con main
         
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
+        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
 
         await getClient().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
@@ -47,7 +75,8 @@ const start = async (): Promise<void> => {
             base: pr.head.ref,
             head: 'main',
         });
-
+        
+        await updateBackportPRBody(pr, prs);
         console.log("Merged main into " + branchHotfix);
     }
 
