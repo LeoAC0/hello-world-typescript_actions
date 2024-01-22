@@ -17,6 +17,16 @@ jobs:
       # - name: Set name PR-From-Branch
       #   id: set_branch
       #   run: echo "PR_FROM_BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+      
+      - name: Extract Hotfix Titles
+        id: extract-hotfix-titles
+        run: |
+            hotfix_titles=()
+            for sha in $(git rev-list --merges --ancestry-path ${{ github.event.before }}..HEAD); do
+              title=$(git log -1 --pretty=%s $sha)
+              hotfix_titles+=("* [${title}]($(git log -1 --pretty=%b $sha | grep -o 'http[s]*://[^\ ]*'))")
+            done
+            echo "hotfix-titles=${hotfix_titles[*]}" >> $GITHUB_ENV
 
       - name: Backport from main to next
         id: bp
@@ -36,15 +46,6 @@ jobs:
           pr-update-if-exists: true
           maintainer-can-modify: false
       
-      - name: Extract Hotfix Titles
-        id: extract-hotfix-titles
-        run: |
-            hotfix_titles=()
-            for sha in $(git rev-list --merges --ancestry-path ${{ github.event.before }}..HEAD); do
-              title=$(git log -1 --pretty=%s $sha)
-              hotfix_titles+=("* [${title}]($(git log -1 --pretty=%b $sha | grep -o 'http[s]*://[^\ ]*'))")
-            done
-            echo "hotfix-titles=${hotfix_titles[*]}" >> $GITHUB_ENV
   
       - name: Output from action
         run: |
