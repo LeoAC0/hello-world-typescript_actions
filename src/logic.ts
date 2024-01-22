@@ -26,6 +26,8 @@ const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs
 
     const updatedBody = `## Backport PR\n\nOriginal PRs included:\n${hotfixInfos.join('\n')}`;
 
+    console.log("updatedBody: " + updatedBody);
+
     await getClient().pulls.update({
         owner: github.context.repo.owner,
         repo: backportPr.repo.name,
@@ -69,6 +71,9 @@ const start = async (): Promise<void> => {
         
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
 
+        console.log("pr:" + pr);
+        console.log("prs:" + prs);
+
         await getClient().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
@@ -76,8 +81,10 @@ const start = async (): Promise<void> => {
             head: 'main',
         });
         
-        await updateBackportPRBody(pr, prs);
         console.log("Merged main into " + branchHotfix);
+        
+        
+        await updateBackportPRBody(pr, prs);
     }
 
     core.setOutput('pr-number', prs[0].number);
