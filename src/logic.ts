@@ -18,7 +18,7 @@ const getPRDetails = async (owner: string, repo: string, prNumber: number): Prom
 
 const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs: PullsListResponseItem[]): Promise<void> => {
     const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
-        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
+        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.base.repo.name, hotfixPR.number);
         return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
     });
 
@@ -30,7 +30,7 @@ const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs
 
     await getClient().pulls.update({
         owner: github.context.repo.owner,
-        repo: backportPr.repo.name,
+        repo: backportPr.base.repo.name,
         pull_number: backportPr.number,
         body: updatedBody,
     });
@@ -64,7 +64,7 @@ const start = async (): Promise<void> => {
     if (prs.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await createBranch({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
-        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
+        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prHotfixTitle);
         prs.push(newPr);
     } else {
         // Mergeamos la rama de backport con main

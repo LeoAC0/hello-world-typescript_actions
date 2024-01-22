@@ -26,6 +26,7 @@ jobs:
           pr-from-branch: main
           pr-to-branch: next
           pr-title: "🚨 Backport from 🔥HOTFIX🔥."
+          pr-hotfix-title: ${{github.event.pull_request.title}}
           pr-body: "Auto PRs into NEXT."
           pr-fail-if-exists: false
           pr-update-if-exists: true

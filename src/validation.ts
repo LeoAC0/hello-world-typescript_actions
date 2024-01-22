@@ -15,6 +15,7 @@ const readInputParameters = (options: any = undefined): any => {
         prFromBranch: core.getInput('pr-from-branch', {required: true}),
         prToBranch: core.getInput('pr-to-branch', {required: true}),
         prTitle: core.getInput('pr-title', {trimWhitespace: true}),
+        prHotfixTitle: core.getInput('pr-hotfix-title'),
         prBody: core.getInput('pr-body', {trimWhitespace: true}),
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
