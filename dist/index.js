@@ -28687,38 +28687,38 @@ const start = async () => {
     // Init REST API Client with auth token
     (0, api_1.initClient)(options.token);
     // Get open PRs
-    let prs = await (0, pr_1.listOpenBackportPRs)();
-    if (prs.length > 0 && options.prFailIfExists) {
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
-        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
+    let hotfixes = await (0, pr_1.listOpenBackportPRs)();
+    if (hotfixes.length > 0 && options.prFailIfExists) {
+        const hotfix = hotfixes[0];
+        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${hotfix.number} (${hotfix.html_url})`);
     }
-    if (prs.length > 0 && !options.prUpdateIfExists) {
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
+    if (hotfixes.length > 0 && !options.prUpdateIfExists) {
+        const hotfix = hotfixes[0];
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
-        core.setOutput('pr-number', pr.number);
-        core.setOutput('pr-url', pr.html_url);
+        core.setOutput('pr-number', hotfix.number);
+        core.setOutput('pr-url', hotfix.html_url);
         return;
     }
     const branchHotfix = github.context.payload.pull_request?.head?.ref;
-    if (prs.length === 0) {
+    if (hotfixes.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await (0, branch_1.createBranch)({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
         const newPr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
-        prs.push(newPr);
+        hotfixes.push(newPr);
     }
     else {
         // Mergeamos la rama de backport con main
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
+        const hotfix = hotfixes[0];
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
-            base: pr.head.ref,
-            head: 'main',
+            base: 'main',
+            head: hotfix.title, // Ajusta esto según la lógica que estás utilizando para el nombre de la rama
         });
         console.log("Merged main into " + branchHotfix);
     }
-    core.setOutput('pr-number', prs[0].number);
-    core.setOutput('pr-url', prs[0].html_url);
+    core.setOutput('pr-number', hotfixes[0].number);
+    core.setOutput('pr-url', hotfixes[0].html_url);
 };
 exports.start = start;
 
@@ -28784,10 +28784,15 @@ const updatePR = async (number, title, message, repoOwner = undefined, repoName 
     if (!(0, validation_1.isDefaultTitle)() && String(title).trim().length > 0) {
         parameters.title = title;
     }
+    const hotfixes = await listOpenBackportPRs(repoOwner, repoName);
+    if (hotfixes.length > 0) {
+        const hotfixList = hotfixes.map((hotfix) => `- [${hotfix.title} (#${hotfix.number})](${hotfix.html_url})`).join('\n');
+        parameters.body = `${message}\n\n### Hotfixes Included:\n${hotfixList}`;
+    }
+    const response = await (0, api_1.getClient)().pulls.update(parameters);
     if (String(message).trim().length > 0) {
         parameters.body = message;
     }
-    const response = await (0, api_1.getClient)().pulls.update(parameters);
     if (response && response.data) {
         const pr = response.data;
         core.info(`Updated PR: # ${pr.number} (${pr.html_url})`);
@@ -28799,7 +28804,6 @@ exports.updatePR = updatePR;
 const createPR = async (head, base, title, body, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
-    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
     const parameters = {
         owner,
         repo,
@@ -28809,6 +28813,7 @@ const createPR = async (head, base, title, body, repoOwner = undefined, repoName
         body
     };
     const response = await (0, api_1.getClient)().pulls.create(parameters);
+    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
     if (response && response.data) {
         const pr = response.data;
         core.info(`Created new PR: # ${pr.number} (${pr.html_url})`);
@@ -28831,6 +28836,16 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         const regex = new RegExp(headPattern, 'i'); // 'i' para hacer la búsqueda insensible a mayúsculas/minúsculas
         return regex.test(pr.head.ref);
     });
+    const hotfixInfo = [];
+    for (const pr of backportPRs) {
+        // Obtener información de cada hotfix
+        const hotfix = {
+            number: pr.number,
+            title: pr.head.ref,
+            html_url: pr.html_url,
+        };
+        hotfixInfo.push(hotfix);
+    }
     if (backportPRs.length > 0) {
         core.info(`Found open PRs with "${headPattern}" in branch head and "${base}" in branch base:`);
         // Mostrar detalles de cada PR
@@ -28841,7 +28856,7 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
     else {
         core.info(`No open PRs found with "${headPattern}" in head and "${base}" in base.`);
     }
-    return backportPRs;
+    return hotfixInfo;
 };
 exports.listOpenBackportPRs = listOpenBackportPRs;
 

@@ -37,18 +37,25 @@ const updatePR = async (number: number, title: string, message: string, repoOwne
     const state = 'open';
 
     core.info(`Updating PR in repo ${owner}/${repo} (PR Number: ${number})...`);
-
+    
     const parameters: { owner: string; repo: string; pull_number: number; state: string; title?: string; body?: string } = { owner, repo, pull_number: number, state };
-
+    
     if (!isDefaultTitle() && String(title).trim().length > 0) {
         parameters.title = title;
     }
+    
+    const hotfixes = await listOpenBackportPRs(repoOwner, repoName);
+
+    if (hotfixes.length > 0) {
+        const hotfixList = hotfixes.map((hotfix) => `- [${hotfix.title} (#${hotfix.number})](${hotfix.html_url})`).join('\n');
+        parameters.body = `${message}\n\n### Hotfixes Included:\n${hotfixList}`;
+    }
+
+    const response = await getClient().pulls.update(parameters);
 
     if (String(message).trim().length > 0) {
         parameters.body = message;
     }
-
-    const response = await getClient().pulls.update(parameters);
 
     if (response && response.data) {
         const pr = response.data;
@@ -62,10 +69,7 @@ const updatePR = async (number: number, title: string, message: string, repoOwne
 const createPR = async (head: string, base: string, title: string, body: string, repoOwner = undefined, repoName = undefined) => {
     const owner = repoOwner ? repoOwner : github.context.repo.owner;
     const repo = repoName ? repoName : github.context.repo.repo;
-
-    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
-
-    const parameters = {
+    const parameters = {    
         owner,
         repo,
         title,
@@ -74,9 +78,11 @@ const createPR = async (head: string, base: string, title: string, body: string,
         body
     };
     const response = await getClient().pulls.create(parameters);
-
+    
+    core.info(`Creating new PR in repo ${owner}/${repo} from ${head} to ${base}`);
+    
     if (response && response.data) {
-        const pr = response.data;
+    const pr = response.data;
         core.info(`Created new PR: # ${pr.number} (${pr.html_url})`);
         return pr;
     }
@@ -95,12 +101,25 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
 
     const parameters = { owner, repo, state, base };
     const response = await getClient().pulls.list(parameters);
-
+    
     const backportPRs: PullsListResponseItem[] = response.data.filter((pr: PullsListResponseItem) => {
         // Utilizar expresión regular para buscar "backport" en el head
         const regex = new RegExp(headPattern, 'i'); // 'i' para hacer la búsqueda insensible a mayúsculas/minúsculas
         return regex.test(pr.head.ref);
     });
+
+
+    const hotfixInfo: { number: number, title: string, html_url: string }[] = [];
+
+    for (const pr of backportPRs) {
+        // Obtener información de cada hotfix
+        const hotfix = {
+            number: pr.number,
+            title: pr.head.ref, // Cambia esto con la lógica adecuada para obtener el título de tus hotfixes
+            html_url: pr.html_url,
+        };
+        hotfixInfo.push(hotfix);
+    }
 
     if (backportPRs.length > 0) {
         core.info(`Found open PRs with "${headPattern}" in branch head and "${base}" in branch base:`);
@@ -114,7 +133,7 @@ const listOpenBackportPRs = async (repoOwner = undefined, repoName = undefined) 
         core.info(`No open PRs found with "${headPattern}" in head and "${base}" in base.`);
     }
 
-    return backportPRs;
+    return hotfixInfo;
 };
 
 export {

@@ -14,45 +14,44 @@ const start = async (): Promise<void> => {
     initClient(options.token);
 
     // Get open PRs
-    let prs: PullsListResponseItem[] = await listOpenBackportPRs();
+    let hotfixes: { number: number, title: string, html_url: string }[] = await listOpenBackportPRs();
 
-    if (prs.length > 0 && options.prFailIfExists) {
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
-        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${pr.number} (${pr.html_url})`);
+    if (hotfixes.length > 0 && options.prFailIfExists) {
+        const hotfix = hotfixes[0];
+        throw new Error(`An active PR was found ('pr-fail-if-exists' is true): # ${hotfix.number} (${hotfix.html_url})`);
     }
 
-    if (prs.length > 0 && !options.prUpdateIfExists) {
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
+    if (hotfixes.length > 0 && !options.prUpdateIfExists) {
+        const hotfix = hotfixes[0];
         core.warning(`An active PR was found but 'pr-update-if-exists' is false, finished action tasks`);
-        core.setOutput('pr-number', pr.number);
-        core.setOutput('pr-url', pr.html_url);
+        core.setOutput('pr-number', hotfix.number);
+        core.setOutput('pr-url', hotfix.html_url);
         return;
     }
 
     const branchHotfix = github.context.payload.pull_request?.head?.ref;
 
-    if (prs.length === 0) {
+    if (hotfixes.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await createBranch({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
         const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
-        prs.push(newPr);
+        hotfixes.push(newPr);
     } else {
         // Mergeamos la rama de backport con main
-        
-        const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso eligo la 1era.
 
+        const hotfix = hotfixes[0];
         await getClient().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,
-            base: pr.head.ref,
-            head: 'main',
+            base: 'main',
+            head: hotfix.title, // Ajusta esto según la lógica que estás utilizando para el nombre de la rama
         });
 
         console.log("Merged main into " + branchHotfix);
     }
 
-    core.setOutput('pr-number', prs[0].number);
-    core.setOutput('pr-url', prs[0].html_url);
+    core.setOutput('pr-number', hotfixes[0].number);
+    core.setOutput('pr-url', hotfixes[0].html_url);
 };
 
 export {
