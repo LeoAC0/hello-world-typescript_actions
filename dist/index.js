@@ -28734,9 +28734,15 @@ const start = async () => {
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
         core.info(`pr: ${pr}`);
         core.info(`prs: ${prs}`);
+        console.log(github.context.repo.owner);
+        console.log(options.repoOwner);
+        console.log(github.context.repo.repo);
+        console.log(options.repoName);
         await (0, api_1.getClient)().repos.merge({
-            owner: options.repoOwner || github.context.repo.owner,
-            repo: options.repoName || github.context.repo.repo,
+            //owner: options.repoOwner || github.context.repo.owner,
+            //repo: options.repoName || github.context.repo.repo,
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
             base: pr.head.ref,
             head: 'main',
         });
