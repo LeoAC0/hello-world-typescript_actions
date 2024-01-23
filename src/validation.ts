@@ -20,6 +20,8 @@ const readInputParameters = (options?: any): input => {
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
         maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
+        repoOwner: core.getInput('repo-owner'),
+        repoName: core.getInput('repo-name'),
     };
 
     return validateOptions(inputOptions);
@@ -35,6 +37,8 @@ interface input {
     prFailIfExists: boolean,
     prUpdateIfExists:boolean,
     maintainerCanModify: boolean,
+    repoOwner: string,
+    repoName: string,
 }
 
 const validateOptions = (inputs: input): input => {

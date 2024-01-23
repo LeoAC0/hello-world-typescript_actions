@@ -20,7 +20,7 @@ inputs:
     default: ''
   pr-hotfix-number:
     description: 'The number of the hotfix.'
-    required: true
+    required: false
     default: '${{github.event.pull_request.number}}'
   pr-body:
     description: 'The contents of the pull request.'
@@ -38,6 +38,14 @@ inputs:
     description: 'Indicates whether maintainers can modify the pull request.'
     required: false
     default: 'false'
+  repo-owner:
+    description: 'The owner of the repo.'
+    required: false
+    default: '${github.context.repo.owner}'
+  repo-name:
+    description: 'The name of the repo.'
+    required: false
+    default: '${github.context.repo.repo}'
 outputs:
   pr-number:
     description: 'Pull request number.'

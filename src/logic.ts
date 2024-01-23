@@ -16,11 +16,7 @@ const getPRDetails = async (owner: string, repo: string, prNumber: number): Prom
     return response.data;
 };
 
-interface pepe extends input{
-    repoOwner: string
-}
-
-const updateBackportPRBody = async (backportPr: Object): Promise<void> => {
+const updateBackportPRBody = async (backportPr: input): Promise<void> => {
 
     const response = await getClient().pulls.get({
         owner: github.context.repo.owner,
@@ -68,7 +64,7 @@ const start = async (): Promise<void> => {
     if (prs.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await createBranch({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
-        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prHotfixTitle);
+        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prHotfixNumber);
         prs.push(newPr);
     } else {
         // Mergeamos la rama de backport con main

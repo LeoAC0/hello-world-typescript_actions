@@ -28689,19 +28689,19 @@ const getPRDetails = async (owner, repo, prNumber) => {
     });
     return response.data;
 };
-const updateBackportPRBody = async (backportPr, hotfixPRs) => {
-    const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
-        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
-        return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
+const updateBackportPRBody = async (backportPr) => {
+    const response = await (0, api_1.getClient)().pulls.get({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        pull_number: backportPr.prHotfixNumber
     });
-    const hotfixInfos = await Promise.all(prInfoPromises);
-    const updatedBody = `## Backport PR\n\nOriginal PRs included:\n${hotfixInfos.join('\n')}`;
-    console.log("updatedBody: " + updatedBody);
+    const pullRequestBody = response.data;
+    const body = pullRequestBody.body;
     await (0, api_1.getClient)().pulls.update({
         owner: github.context.repo.owner,
-        repo: backportPr.repo.name,
-        pull_number: backportPr.number,
-        body: updatedBody,
+        repo: github.context.repo.repo,
+        pull_number: github.context.payload.pull_request.number,
+        body: `${body} \n ${backportPr}`,
     });
 };
 const start = async () => {
@@ -28726,7 +28726,7 @@ const start = async () => {
     if (prs.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await (0, branch_1.createBranch)({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
-        const newPr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
+        const newPr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prHotfixNumber);
         prs.push(newPr);
     }
     else {
@@ -28741,7 +28741,7 @@ const start = async () => {
             head: 'main',
         });
         console.log("Merged main into " + branchHotfix);
-        await updateBackportPRBody(pr, prs);
+        await updateBackportPRBody(options);
     }
     core.setOutput('pr-number', prs[0].number);
     core.setOutput('pr-url', prs[0].html_url);
@@ -28906,7 +28906,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isDefaultTitle = exports.readInputParameters = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 let defaultPRTitle = false;
-const readInputParameters = (options = undefined) => {
+const readInputParameters = (options) => {
     if (options !== undefined) {
         core.info('Reading input parameters from internal method...');
         return validateOptions(options);
@@ -28917,15 +28917,18 @@ const readInputParameters = (options = undefined) => {
         prFromBranch: core.getInput('pr-from-branch', { required: true }),
         prToBranch: core.getInput('pr-to-branch', { required: true }),
         prTitle: core.getInput('pr-title', { trimWhitespace: true }),
+        prHotfixNumber: core.getInput('pr-hotfix-number'),
         prBody: core.getInput('pr-body', { trimWhitespace: true }),
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
         maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
+        repoOwner: core.getInput('repo-owner'),
+        repoName: core.getInput('repo-name'),
     };
     return validateOptions(inputOptions);
 };
 exports.readInputParameters = readInputParameters;
-const validateOptions = (inputs = {}) => {
+const validateOptions = (inputs) => {
     const errors = [];
     core.info('Validating input parameters...');
     if (String(inputs.prTitle).trim().length === 0) {

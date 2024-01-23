@@ -6,8 +6,8 @@ import { getClient } from './api';
 
 interface BranchOptions {
     branchName: string;
-    repoOwner?: string;
-    repoName?: string;
+    repoOwner: string;
+    repoName: string;
 }
 
 // Función para generar un hash SHA-256 único
@@ -68,6 +68,6 @@ const createBranch = async (options: BranchOptions): Promise<void> => {
 
 export {
     createBranch,
-    branchHash
+    branchHash,
 };
 
