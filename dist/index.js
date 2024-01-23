@@ -28687,11 +28687,12 @@ const getPRDetails = async (owner, repo, prNumber) => {
         repo,
         pull_number: prNumber,
     });
+    console.log(response.data);
     return response.data;
 };
 const updateBackportPRBody = async (backportPr, hotfixPRs) => {
     const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
-        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
+        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.base.repo.name, hotfixPR.number);
         return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
     });
     const hotfixInfos = await Promise.all(prInfoPromises);
@@ -28699,7 +28700,7 @@ const updateBackportPRBody = async (backportPr, hotfixPRs) => {
     console.log("updatedBody: " + updatedBody);
     await (0, api_1.getClient)().pulls.update({
         owner: github.context.repo.owner,
-        repo: backportPr.repo.name,
+        repo: backportPr.base.repo.name,
         pull_number: backportPr.number,
         body: updatedBody,
     });
@@ -28733,7 +28734,7 @@ const start = async () => {
         // Mergeamos la rama de backport con main
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
         core.info(`pr: ${pr}`);
-        core.info(`prs: ${prs}`);
+        core.info(`prs: ${prs[0]}`);
         await (0, api_1.getClient)().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
             repo: options.repoName || github.context.repo.repo,

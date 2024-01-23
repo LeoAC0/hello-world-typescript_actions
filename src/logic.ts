@@ -12,13 +12,14 @@ const getPRDetails = async (owner: string, repo: string, prNumber: number): Prom
         repo,
         pull_number: prNumber,
     });
-
+    console.log(response.data);
+    
     return response.data;
 };
 
 const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs: PullsListResponseItem[]): Promise<void> => {
     const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
-        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.repo.name, hotfixPR.number);
+        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.base.repo.name, hotfixPR.number);
         return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
     });
 
@@ -30,7 +31,7 @@ const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs
 
     await getClient().pulls.update({
         owner: github.context.repo.owner,
-        repo: backportPr.repo.name,
+        repo: backportPr.base.repo.name,
         pull_number: backportPr.number,
         body: updatedBody,
     });
@@ -72,7 +73,7 @@ const start = async (): Promise<void> => {
         const pr = prs[0]; // Supongo que vamos a tener una sola PR abierta, por eso elijo la 1era.
 
         core.info(`pr: ${pr}`);
-        core.info(`prs: ${prs}`);
+        core.info(`prs: ${prs[0]}`);
         
         await getClient().repos.merge({
             owner: options.repoOwner || github.context.repo.owner,
