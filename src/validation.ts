@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 
 let defaultPRTitle = false;
 
-const readInputParameters = (options: any = undefined): any => {
+const readInputParameters = (options?: any): input => {
     if (options !== undefined) {
         core.info('Reading input parameters from internal method...');
         return validateOptions(options);
@@ -10,12 +10,12 @@ const readInputParameters = (options: any = undefined): any => {
 
     core.info('Reading input parameters from GitHub workflow...');
 
-    const inputOptions = {
+    const inputOptions: input = {
         token: core.getInput('token', {required: true, trimWhitespace: true}),
         prFromBranch: core.getInput('pr-from-branch', {required: true}),
         prToBranch: core.getInput('pr-to-branch', {required: true}),
         prTitle: core.getInput('pr-title', {trimWhitespace: true}),
-        prHotfixTitle: core.getInput('pr-hotfix-title'),
+        prHotfixNumber: core.getInput('pr-hotfix-number'),
         prBody: core.getInput('pr-body', {trimWhitespace: true}),
         prFailIfExists: core.getBooleanInput('pr-fail-if-exists'),
         prUpdateIfExists: core.getBooleanInput('pr-update-if-exists'),
@@ -25,7 +25,19 @@ const readInputParameters = (options: any = undefined): any => {
     return validateOptions(inputOptions);
 };
 
-const validateOptions = (inputs: any = {}): any => {
+interface input {
+    token: string,
+    prFromBranch: string,
+    prToBranch: string,
+    prTitle: string,
+    prHotfixNumber: string,
+    prBody: string,
+    prFailIfExists: boolean,
+    prUpdateIfExists:boolean,
+    maintainerCanModify: boolean,
+}
+
+const validateOptions = (inputs: input): input => {
     const errors = [];
     core.info('Validating input parameters...');
 
@@ -43,5 +55,6 @@ const isDefaultTitle = (): boolean => defaultPRTitle;
 
 export {
     readInputParameters,
-    isDefaultTitle
+    isDefaultTitle,
+    input
 };

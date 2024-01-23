@@ -18,6 +18,10 @@ inputs:
     description: 'The title of the new pull request.'
     required: false
     default: ''
+  pr-hotfix-number:
+    description: 'The number of the hotfix.'
+    required: true
+    default: '${{github.event.pull_request.number}}'
   pr-body:
     description: 'The contents of the pull request.'
     required: false

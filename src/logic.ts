@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 
 import { initClient, getClient } from './api';
 import { createPR, listOpenBackportPRs, PullsListResponseItem } from './pr';
-import { readInputParameters } from './validation';
+import { readInputParameters, input } from './validation';
 import { createBranch, branchHash } from './branch';
 
 const getPRDetails = async (owner: string, repo: string, prNumber: number): Promise<any> => {
@@ -16,23 +16,27 @@ const getPRDetails = async (owner: string, repo: string, prNumber: number): Prom
     return response.data;
 };
 
-const updateBackportPRBody = async (backportPr: PullsListResponseItem, hotfixPRs: PullsListResponseItem[]): Promise<void> => {
-    const prInfoPromises = hotfixPRs.map(async (hotfixPR) => {
-        const hotfixInfo = await getPRDetails(github.context.repo.owner, hotfixPR.base.repo.name, hotfixPR.number);
-        return `- [${hotfixInfo.title}](${hotfixInfo.html_url})`;
+interface pepe extends input{
+    repoOwner: string
+}
+
+const updateBackportPRBody = async (backportPr: Object): Promise<void> => {
+
+    const response = await getClient().pulls.get({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        pull_number: backportPr.prHotfixNumber
     });
 
-    const hotfixInfos = await Promise.all(prInfoPromises);
+    const pullRequestBody = response.data;
+    const body = pullRequestBody.body;
 
-    const updatedBody = `## Backport PR\n\nOriginal PRs included:\n${hotfixInfos.join('\n')}`;
-
-    console.log("updatedBody: " + updatedBody);
 
     await getClient().pulls.update({
         owner: github.context.repo.owner,
-        repo: backportPr.base.repo.name,
-        pull_number: backportPr.number,
-        body: updatedBody,
+        repo: github.context.repo.repo,
+        pull_number: github.context.payload.pull_request!.number,
+        body: `${body} \n ${backportPr}`,
     });
 };
 
@@ -84,7 +88,7 @@ const start = async (): Promise<void> => {
         console.log("Merged main into " + branchHotfix);
         
         
-        await updateBackportPRBody(pr, prs);
+        await updateBackportPRBody(options);
     }
 
     core.setOutput('pr-number', prs[0].number);
