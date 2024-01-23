@@ -76,7 +76,7 @@ const start = async (): Promise<void> => {
     if (prs.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await createBranch({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
-        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prHotfixNumber);
+        const newPr = await createPR(branchHash, options.prToBranch, options.prTitle, options.prBody);
         prs.push(newPr);
     } else {
         // Mergeamos la rama de backport con main

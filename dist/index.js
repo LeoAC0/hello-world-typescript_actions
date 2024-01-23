@@ -28734,7 +28734,7 @@ const start = async () => {
     if (prs.length === 0) {
         // No se encontraron PRs abiertos, así que creamos uno
         await (0, branch_1.createBranch)({ branchName: branchHotfix, repoOwner: options.repoOwner, repoName: options.repoName });
-        const newPr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prHotfixNumber);
+        const newPr = await (0, pr_1.createPR)(branch_1.branchHash, options.prToBranch, options.prTitle, options.prBody);
         prs.push(newPr);
     }
     else {
