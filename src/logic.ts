@@ -16,7 +16,7 @@ const getPRDetails = async (owner: string, repo: string, prNumber: number): Prom
     return response.data;
 };
 
-const updateBackportPRBody = async (backportPr: input, prNumber: number): Promise<void> => {
+const updateBackportPRBody = async (backportPr: input, prNumber: number, prBody: string): Promise<void> => {
 
     console.log("Dentro del update Body");
     
@@ -31,18 +31,20 @@ const updateBackportPRBody = async (backportPr: input, prNumber: number): Promis
         pull_number: backportPr.prHotfixNumber
     });
     
-    const pullRequestBody = response.data;
-    console.log(pullRequestBody);
-    const body = pullRequestBody.body;
-    console.log(body);
+    const pullRequestHotfixData = response.data;
     
-
+    const hotfixTitle = pullRequestHotfixData.title;
+    const hotfixLink = pullRequestHotfixData.html_url;
+    
+    console.log("prBody" + prBody);
+    console.log("hotfixTitle: " + hotfixTitle);
+    console.log("hotfixLink: " + hotfixLink);
 
     await getClient().pulls.update({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         pull_number: prNumber,
-        body: `${body} \n ${backportPr}`,
+        body: `${prBody} \n ${hotfixTitle}, ${hotfixLink} `,
     });
 };
 
@@ -101,10 +103,11 @@ const start = async (): Promise<void> => {
         
         console.log("Merged main into " + branchHotfix);
         
-        const prNumber= pr.number;
+        const prNumber = pr.number;
+        const prBody = pr.body;
         console.log("prNumberBackport: " + prNumber);
         
-        await updateBackportPRBody(options, prNumber);
+        await updateBackportPRBody(options, prNumber, prBody);
     }
 
     core.setOutput('pr-number', prs[0].number);

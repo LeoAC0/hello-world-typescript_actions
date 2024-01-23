@@ -10,7 +10,8 @@ interface PullsListResponseItem {
             repo: {name: string} 
         };
     number: number;
-    html_url: string
+    html_url: string;
+    body: string;
 }
 
 const getOpenPR = async (head: string, base: string, repoOwner = undefined, repoName = undefined) => {
