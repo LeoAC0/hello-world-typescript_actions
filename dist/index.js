@@ -28689,18 +28689,24 @@ const getPRDetails = async (owner, repo, prNumber) => {
     });
     return response.data;
 };
-const updateBackportPRBody = async (backportPr) => {
+const updateBackportPRBody = async (backportPr, prNumber) => {
+    console.log("Dentro del update Body");
+    console.log("prHotfix: " + backportPr.prHotfixNumber);
+    console.log("repoOwner: " + github.context.repo.owner);
+    console.log("repoName: " + github.context.repo.repo);
     const response = await (0, api_1.getClient)().pulls.get({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         pull_number: backportPr.prHotfixNumber
     });
     const pullRequestBody = response.data;
+    console.log(pullRequestBody);
     const body = pullRequestBody.body;
+    console.log(body);
     await (0, api_1.getClient)().pulls.update({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
-        pull_number: github.context.payload.pull_request.number,
+        pull_number: prNumber,
         body: `${body} \n ${backportPr}`,
     });
 };
@@ -28747,7 +28753,9 @@ const start = async () => {
             head: 'main',
         });
         console.log("Merged main into " + branchHotfix);
-        await updateBackportPRBody(options);
+        const prNumber = pr.number;
+        console.log("prNumberBackport: " + prNumber);
+        await updateBackportPRBody(options, prNumber);
     }
     core.setOutput('pr-number', prs[0].number);
     core.setOutput('pr-url', prs[0].html_url);

@@ -41,11 +41,11 @@ inputs:
   repo-owner:
     description: 'The owner of the repo.'
     required: false
-    default: '${github.context.repo.owner}'
+    default: '${{github.context.repo.owner}}'
   repo-name:
     description: 'The name of the repo.'
     required: false
-    default: '${github.context.repo.repo}'
+    default: '${{github.context.repo.repo}}'
 outputs:
   pr-number:
     description: 'Pull request number.'
